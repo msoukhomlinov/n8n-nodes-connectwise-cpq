@@ -1,0 +1,4114 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "version": "1.0",
+    "title": "ConnectWiseSellService",
+    "description": "Version 1.0"
+  },
+  "host": "sellapi.quosalsell.com",
+  "schemes": [
+    "https"
+  ],
+  "paths": {
+    "/api/quotes/{quoteId}/customers": {
+      "get": {
+        "tags": [
+          "QuoteCustomers"
+        ],
+        "operationId": "Get Quote Customers for Quote ID",
+        "consumes": [ "application/json; version = 1.0" ],
+		"produces": [ "application/json" ],
+        "parameters": [
+          {
+            "name": "quoteId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/CustomerView"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quotes/{quoteId}/customers/{id}": {
+      "put": {
+        "tags": [
+          "QuoteCustomers"
+        ],
+        "operationId": "Put Quote Customer for Quote Customer ID",
+        "consumes": [ "application/json; version = 1.0" ],
+		"produces": [ "application/json" ],
+        "parameters": [
+          {
+            "name": "quoteId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "requestBody",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CustomerView"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/CustomerView"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "QuoteCustomers"
+        ],
+        "operationId": "Delete Quote Customer for Quote Customer ID",
+        "consumes": [ "application/json; version = 1.0" ],
+        "produces": [],
+        "parameters": [
+          {
+            "name": "quoteId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "QuoteCustomers"
+        ],
+        "operationId": "Patch Quote Customer for Quote Customer ID",
+        "consumes": [ "application/json; version = 1.0" ],
+		"produces": [ "application/json" ],
+        "parameters": [
+          {
+            "name": "quoteId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "patch",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/JsonPatchDocument[CustomerView]"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/CustomerView"
+            }
+          }
+        }
+      }
+    },
+    "/api/quoteItems": {
+      "get": {
+        "tags": [
+          "QuoteItems"
+        ],
+        "operationId": "Get Quote Items",
+        "consumes": [ "application/json; version = 1.0" ],
+		"produces": [ "application/json" ],
+        "parameters": [
+          {
+            "name": "showAllVersions",
+            "in": "query",
+            "description": "Set true for results from deleted or archived quotes. Set false to omit records from deleted or archive quotes. Defaults to true.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "includeFields",
+            "in": "query",
+            "description": "Comma separated list of fields to return.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "conditions",
+            "in": "query",
+            "description": "Conditional retrieve statements.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page of results to get. 1-index based.",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Page size of results to get. Max size 1000, default 50.",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/QuoteItemView"
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "QuoteItems"
+        ],
+        "operationId": "Post Quote Item",
+        "consumes": [ "application/json; version = 1.0" ],
+		"produces": [ "application/json" ],
+        "parameters": [
+          {
+            "name": "post",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/QuoteItemView"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/QuoteItemView"
+            }
+          }
+        }
+      }
+    },
+    "/api/quoteItems/{id}": {
+      "get": {
+        "tags": [
+          "QuoteItems"
+        ],
+        "operationId": "Get Quote Item by ID",
+        "consumes": [ "application/json; version = 1.0" ],
+		"produces": [ "application/json" ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/QuoteItemView"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "QuoteItems"
+        ],
+        "operationId": "Delete Quote Item by ID",
+        "consumes": [ "application/json; version = 1.0" ],
+        "produces": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "QuoteItems"
+        ],
+        "operationId": "Patch Quote Item by ID",
+        "consumes": [ "application/json; version = 1.0" ],
+		"produces": [ "application/json" ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "patch",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/JsonPatchDocument[QuoteItemView]"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/QuoteItemView"
+            }
+          }
+        }
+      }
+    },
+    "/api/quotes": {
+      "get": {
+        "tags": [
+          "Quotes"
+        ],
+        "operationId": "Get Quotes",
+        "consumes": [ "application/json; version = 1.0" ],
+		"produces": [ "application/json" ],
+        "parameters": [
+          {
+            "name": "showAllVersions",
+            "in": "query",
+            "description": "Set true for results from deleted or archived quotes. Defaults to false.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "includeFields",
+            "in": "query",
+            "description": "Comma separated list of fields to return.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "conditions",
+            "in": "query",
+            "description": "Conditional retrieve statements.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page of results to get. 1-index based.",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Page size of results to get. Max size 1000, default 50.",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/QuoteView"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quotes/{id}": {
+      "get": {
+        "tags": [
+          "Quotes"
+        ],
+        "operationId": "Get Quote by ID",
+        "consumes": [ "application/json; version = 1.0" ],
+		"produces": [ "application/json" ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/QuoteView"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Quotes"
+        ],
+        "operationId": "Delete Quote by ID",
+        "consumes": [ "application/json; version = 1.0" ],
+        "produces": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Quotes"
+        ],
+        "operationId": "Patch Quote by ID",
+        "consumes": [ "application/json; version = 1.0" ],
+		"produces": [ "application/json" ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "patch",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/JsonPatchDocument[QuoteView]"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/QuoteView"
+            }
+          }
+        }
+      }
+    },
+    "/api/quotes/{quoteNumber}/versions": {
+      "get": {
+        "tags": [
+          "Quotes"
+        ],
+        "operationId": "Get Quotes by Quote Number",
+        "consumes": [ "application/json; version = 1.0" ],
+		"produces": [ "application/json" ],
+        "parameters": [
+          {
+            "name": "quoteNumber",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/QuoteView"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quotes/{quoteNumber}/versions/latest": {
+      "get": {
+        "tags": [
+          "Quotes"
+        ],
+        "operationId": "Get Latest Version of Quote by Quote Number",
+        "consumes": [ "application/json; version = 1.0" ],
+		"produces": [ "application/json" ],
+        "parameters": [
+          {
+            "name": "quoteNumber",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/QuoteView"
+            }
+          }
+        }
+      }
+    },
+    "/api/quotes/{quoteNumber}/versions/{quoteVersion}": {
+      "get": {
+        "tags": [
+          "Quotes"
+        ],
+        "operationId": "Get Quote by Quote Number and Version",
+        "consumes": [ "application/json; version = 1.0" ],
+		"produces": [ "application/json" ],
+        "parameters": [
+          {
+            "name": "quoteNumber",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "quoteVersion",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/QuoteView"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Quotes"
+        ],
+        "operationId": "Delete Quote by Number and Version",
+        "consumes": [ "application/json; version = 1.0" ],
+        "produces": [],
+        "parameters": [
+          {
+            "name": "quoteNumber",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "quoteVersion",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/quotes/copyById/{id}": {
+      "post": {
+        "tags": [
+          "Quotes"
+        ],
+        "description": "NOTE: Also copies tabs, items and quote customers.",
+        "operationId": "Copy Quote",
+        "consumes": [ "application/json; version = 1.0" ],
+		"produces": [ "application/json" ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Quote or template ID",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/QuoteView"
+            }
+          }
+        }
+      }
+    },
+    "/api/quoteTabs": {
+      "get": {
+        "tags": [
+          "QuoteTabs"
+        ],
+        "operationId": "Get Quote Tabs",
+        "consumes": [ "application/json; version = 1.0" ],
+		"produces": [ "application/json" ],
+        "parameters": [
+          {
+            "name": "showAllVersions",
+            "in": "query",
+            "description": "Set true for results from deleted or archived quotes. Set false to omit records from deleted or archive quotes. Defaults to true.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "includeFields",
+            "in": "query",
+            "description": "Comma separated list of fields to return.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "conditions",
+            "in": "query",
+            "description": "Conditional retrieve statements.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page of results to get. 1-index based.",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Page size of results to get. Max size 1000, default 50.",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/QuoteTabView"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quoteTabs/{id}/quoteItems": {
+      "get": {
+        "tags": [
+          "QuoteTabs"
+        ],
+        "operationId": "Get Quote Items by Tab Id",
+        "consumes": [ "application/json; version = 1.0" ],
+		"produces": [ "application/json" ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/QuoteItemView"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quotes/{quoteId}/quoteTerms": {
+      "get": {
+        "tags": [
+          "QuoteTerms"
+        ],
+        "operationId": "Get Quote Terms",
+        "consumes": [ "application/json; version = 1.0" ],
+		"produces": [ "application/json" ],
+        "parameters": [
+          {
+            "name": "quoteId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "includeFields",
+            "in": "query",
+            "description": "Comma separated list of fields to return.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "conditions",
+            "in": "query",
+            "description": "Conditional retrieve statements.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page of results to get. 1-index based.",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Page size of results to get. Max size 1000, default 50.",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/QuoteTermView"
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "QuoteTerms"
+        ],
+        "operationId": "Add Quote Term",
+        "consumes": [ "application/json; version = 1.0" ],
+		"produces": [ "application/json" ],
+        "parameters": [
+          {
+            "name": "quoteId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "requestBody",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/QuoteTermView"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/QuoteTermView"
+            }
+          }
+        }
+      }
+    },
+    "/api/quotes/{quoteId}/quoteTerms/{id}": {
+      "delete": {
+        "tags": [
+          "QuoteTerms"
+        ],
+        "operationId": "Delete Quote Term",
+        "consumes": [ "application/json; version = 1.0" ],
+        "produces": [],
+        "parameters": [
+          {
+            "name": "quoteId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "QuoteTerms"
+        ],
+        "operationId": "Update Quote Term",
+        "consumes": [ "application/json; version = 1.0" ],
+		"produces": [ "application/json" ],
+        "parameters": [
+          {
+            "name": "quoteId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "patch",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/JsonPatchDocument[QuoteTermView]"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/QuoteTermView"
+            }
+          }
+        }
+      }
+    },
+    "/api/recurringRevenues": {
+      "get": {
+        "tags": [
+          "RecurringRevenue"
+        ],
+        "operationId": "Get Recurring Revenues",
+        "consumes": [ "application/json; version = 1.0" ],
+		"produces": [ "application/json" ],
+        "parameters": [
+          {
+            "name": "includeFields",
+            "in": "query",
+            "description": "Comma separated list of fields to return.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "conditions",
+            "in": "query",
+            "description": "Conditional retrieve statements.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page of results to get. 1-index based.",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Page size of results to get. Max size 1000, default 50.",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/RecurringRevenueView"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/taxCodes": {
+      "get": {
+        "tags": [
+          "TaxCode"
+        ],
+        "operationId": "Get Tax Codes",
+        "consumes": [ "application/json; version = 1.0" ],
+		"produces": [ "application/json" ],
+        "parameters": [
+          {
+            "name": "includeFields",
+            "in": "query",
+            "description": "Comma separated list of fields to return.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "conditions",
+            "in": "query",
+            "description": "Conditional retrieve statements.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page of results to get. 1-index based.",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Page size of results to get. Max size 1000, default 50.",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/TaxCodeView"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/templates": {
+      "get": {
+        "tags": [
+          "Templates"
+        ],
+        "operationId": "Get Templates",
+        "consumes": [ "application/json; version = 1.0" ],
+		"produces": [ "application/json" ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/QuoteView"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/settings/user": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "operationId": "Get User",
+        "consumes": [ "application/json; version = 1.0" ],
+		"produces": [ "application/json" ],
+        "parameters": [
+          {
+            "name": "includeFields",
+            "in": "query",
+            "description": "Comma separated list of fields to return.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "conditions",
+            "in": "query",
+            "description": "Conditional retrieve statements.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page of results to get. 1-index based.",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Page size of results to get. Max size 1000, default 50.",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/UserView"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/settings/user/{id}": {
+      "patch": {
+        "tags": [
+          "User"
+        ],
+        "operationId": "Patch User by ID",
+        "consumes": [ "application/json; version = 1.0" ],
+		"produces": [ "application/json" ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "patch",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/JsonPatchDocument[UserView]"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/UserView"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "CustomerView": {
+      "type": "object",
+      "properties": {
+        "accountName": {
+          "type": "string"
+        },
+        "accountNumber": {
+          "type": "string"
+        },
+        "address1": {
+          "type": "string"
+        },
+        "address2": {
+          "type": "string"
+        },
+        "city": {
+          "type": "string"
+        },
+        "companyId": {
+          "type": "string"
+        },
+        "country": {
+          "type": "string"
+        },
+        "customCustomerString1": {
+          "type": "string"
+        },
+        "customCustomerString2": {
+          "type": "string"
+        },
+        "customCustomerString3": {
+          "type": "string"
+        },
+        "customerSource": {
+          "type": "string"
+        },
+        "customerSourceId": {
+          "type": "string"
+        },
+        "customerType": {
+          "type": "string",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "dayPhone": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "emailAddress": {
+          "type": "string"
+        },
+        "firstName": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "integrationId": {
+          "type": "string"
+        },
+        "jobTitle": {
+          "type": "string"
+        },
+        "lastName": {
+          "type": "string"
+        },
+        "locationId": {
+          "type": "string"
+        },
+        "mobilePhone": {
+          "type": "string"
+        },
+        "modifyDate": {
+          "format": "date-time",
+          "type": "string",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "postalCode": {
+          "type": "string"
+        },
+        "priceLevel": {
+          "type": "string"
+        },
+        "priceLevelName": {
+          "type": "string"
+        },
+        "quote": {
+          "$ref": "#/definitions/ReferenceLink",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "relationshipSinceDate": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "taxExternalReferenceId": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string"
+        }
+      }
+    },
+    "ReferenceLink": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "_info": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "JsonPatchDocument[CustomerView]": {
+      "type": "object",
+      "properties": {
+        "operations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Operation[CustomerView]"
+          },
+          "description": "This field is Read Only.", "readOnly": true
+        }
+      },
+      "example": [
+        {
+          "value": "New Value",
+          "path": "/property",
+          "op": "replace"
+        },
+        {
+          "value": "New Value",
+          "path": "/property",
+          "op": "add"
+        },
+        {
+          "path": "/property",
+          "op": "remove"
+        }
+      ]
+    },
+    "Operation[CustomerView]": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "object"
+        },
+        "path": {
+          "type": "string"
+        },
+        "op": {
+          "type": "string"
+        },
+        "from": {
+          "type": "string"
+        }
+      }
+    },
+    "QuoteItemsQueryModel": {
+      "type": "object",
+      "properties": {
+        "showAllVersions": {
+          "description": "Set true for results from deleted or archived quotes. Set false to omit records from deleted or archive quotes. Defaults to true.",
+          "type": "boolean"
+        },
+        "includeFields": {
+          "description": "Comma separated list of fields to return.",
+          "type": "string"
+        },
+        "conditions": {
+          "description": "Conditional retrieve statements.",
+          "type": "string"
+        },
+        "page": {
+          "format": "int32",
+          "description": "Page of results to get. 1-index based.",
+          "type": "integer"
+        },
+        "pageSize": {
+          "format": "int32",
+          "description": "Page size of results to get. Max size 1000, default 50.",
+          "type": "integer"
+        }
+      }
+    },
+    "QuoteItemView": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "idQuote": {
+          "type": "string"
+        },
+        "approvalContentHash": {
+          "type": "string",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "approvalMarginMinimum": {
+          "format": "double",
+          "type": "number"
+        },
+        "approvalOnChange": {
+          "type": "boolean"
+        },
+        "approvalPriceMinimum": {
+          "format": "double",
+          "type": "number"
+        },
+        "basePrice": {
+          "format": "double",
+          "type": "number"
+        },
+        "configId": {
+          "type": "string",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "configPosition": {
+          "format": "int32",
+          "type": "integer",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "cost": {
+          "format": "double",
+          "type": "number"
+        },
+        "costModifier": {
+          "type": "string"
+        },
+        "crmReference": {
+          "type": "string"
+        },
+        "cwAgreement": {
+          "type": "string"
+        },
+        "cwClass": {
+          "type": "string"
+        },
+        "defermentPeriods": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "dimension1": {
+          "type": "string"
+        },
+        "dimension2": {
+          "type": "string"
+        },
+        "dimension3": {
+          "type": "string"
+        },
+        "dimension4": {
+          "type": "string"
+        },
+        "dimension5": {
+          "type": "string"
+        },
+        "disableRemaps": {
+          "type": "boolean"
+        },
+        "discount": {
+          "format": "double",
+          "type": "number",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "discountAmount": {
+          "format": "double",
+          "type": "number",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "discountAmountConverted": {
+          "format": "double",
+          "type": "number",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "enforceItemModTags": {
+          "type": "boolean"
+        },
+        "etilizeProductId": {
+          "format": "double",
+          "type": "number"
+        },
+        "etilizeSerializedAttributes": {
+          "type": "string"
+        },
+        "extendedCost": {
+          "format": "double",
+          "type": "number",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "extendedPrice": {
+          "format": "double",
+          "type": "number",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "extendedPriceConverted": {
+          "format": "double",
+          "type": "number",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "extendedSuggestedPrice": {
+          "format": "double",
+          "type": "number",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "externalQuoteNumber": {
+          "type": "string"
+        },
+        "externalReference": {
+          "type": "string"
+        },
+        "factorItemMfp": {
+          "type": "string"
+        },
+        "factorQtyFixed": {
+          "format": "double",
+          "type": "number"
+        },
+        "factorQtyMultiplier": {
+          "format": "double",
+          "type": "number"
+        },
+        "federalGovPrice": {
+          "format": "double",
+          "type": "number"
+        },
+        "grossMargin": {
+          "format": "double",
+          "type": "number",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "groupingCode": {
+          "type": "string"
+        },
+        "gsaPrice": {
+          "format": "double",
+          "type": "number"
+        },
+        "gst": {
+          "format": "double",
+          "type": "number"
+        },
+        "gstConverted": {
+          "format": "double",
+          "type": "number"
+        },
+        "gstRate": {
+          "format": "double",
+          "type": "number"
+        },
+        "idQuoteTabs": {
+          "type": "string"
+        },
+        "idRecurringRevenue": {
+          "type": "string"
+        },
+        "isBundleComponent": {
+          "type": "boolean",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "isBundleHeader": {
+          "type": "boolean",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "isDeferrable": {
+          "type": "boolean"
+        },
+        "isHiddenItem": {
+          "type": "boolean"
+        },
+        "isMetadataItem": {
+          "type": "boolean"
+        },
+        "isModTagModified": {
+          "type": "boolean"
+        },
+        "isOptional": {
+          "type": "boolean"
+        },
+        "isOverrideQty": {
+          "type": "boolean"
+        },
+        "isPhaseItem": {
+          "type": "boolean"
+        },
+        "isPrinted": {
+          "type": "boolean"
+        },
+        "isPromotion": {
+          "type": "boolean"
+        },
+        "isProtectedItem": {
+          "type": "boolean"
+        },
+        "isProtectedPrice": {
+          "type": "boolean"
+        },
+        "isRampable": {
+          "type": "boolean"
+        },
+        "isRebate": {
+          "type": "boolean"
+        },
+        "isRecurringTaxable": {
+          "type": "boolean"
+        },
+        "isSelected": {
+          "type": "boolean"
+        },
+        "isShowPrice": {
+          "type": "boolean"
+        },
+        "isSold": {
+          "type": "boolean"
+        },
+        "isTaxable": {
+          "type": "boolean"
+        },
+        "isTotalsIncluded": {
+          "type": "boolean"
+        },
+        "itemCube": {
+          "format": "double",
+          "type": "number"
+        },
+        "itemHeight": {
+          "format": "double",
+          "type": "number"
+        },
+        "itemLength": {
+          "format": "double",
+          "type": "number"
+        },
+        "itemNotes": {
+          "type": "string"
+        },
+        "itemNotesHtml": {
+          "type": "string"
+        },
+        "itemNumber": {
+          "type": "string"
+        },
+        "itemWidth": {
+          "format": "double",
+          "type": "number"
+        },
+        "invoiceGroupingId": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "keywords": {
+          "type": "string"
+        },
+        "lineType": {
+          "type": "string"
+        },
+        "localPriceFormula": {
+          "type": "string"
+        },
+        "longDescription": {
+          "type": "string"
+        },
+        "manufacturerPartNumber": {
+          "type": "string"
+        },
+        "marketingInformation": {
+          "type": "string"
+        },
+        "markup": {
+          "format": "double",
+          "type": "number",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "modifyDate": {
+          "format": "date-time",
+          "type": "string",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "netCost": {
+          "format": "double",
+          "type": "number"
+        },
+        "onHand": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "onHandWarehouse1": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "onHandWarehouse2": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "onOrder": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "optionGroup": {
+          "type": "string"
+        },
+        "optionLocked": {
+          "type": "boolean"
+        },
+        "overridePackageDetails": {
+          "type": "boolean"
+        },
+        "overridePrice": {
+          "format": "double",
+          "type": "number"
+        },
+        "overridePriceModifier": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string"
+        },
+        "packagePrice": {
+          "format": "double",
+          "type": "number"
+        },
+        "packageQty": {
+          "format": "double",
+          "type": "number"
+        },
+        "parentQuoteItem": {
+          "type": "string"
+        },
+        "pdfAttachment": {
+          "type": "string"
+        },
+        "period": {
+          "type": "string"
+        },
+        "poNumber": {
+          "type": "string"
+        },
+        "posDescription": {
+          "type": "string"
+        },
+        "poStatus": {
+          "type": "string"
+        },
+        "priceConverted": {
+          "format": "double",
+          "type": "number"
+        },
+        "priceModifier": {
+          "type": "string",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "productCategory": {
+          "type": "string"
+        },
+        "productClass": {
+          "type": "string"
+        },
+        "productSubCategory": {
+          "type": "string"
+        },
+        "productType": {
+          "type": "string"
+        },
+        "promotionComment": {
+          "type": "string"
+        },
+        "promotionExpirationDate": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "pst": {
+          "format": "double",
+          "type": "number"
+        },
+        "pstConverted": {
+          "format": "double",
+          "type": "number"
+        },
+        "pstRate": {
+          "format": "double",
+          "type": "number"
+        },
+        "quantity": {
+          "format": "double",
+          "type": "number"
+        },
+        "quosalDescription": {
+          "type": "string"
+        },
+        "quosalPurchasingNotes": {
+          "type": "string"
+        },
+        "quote": {
+          "$ref": "#/definitions/ReferenceLink",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "quoteTab": {
+          "$ref": "#/definitions/ReferenceLink",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "quoteItemPrice": {
+          "format": "double",
+          "type": "number"
+        },
+        "quoteName": {
+          "type": "string"
+        },
+        "quoteReadableId": {
+          "type": "string",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "rampPeriods": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "rebateComment": {
+          "type": "string"
+        },
+        "rebateExpirationDate": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "recurringAmount": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringBasePrice": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringCalculatedPriceModifier": {
+          "type": "string",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "recurringCost": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringCostModifier": {
+          "type": "string"
+        },
+        "recurringExtendedCost": {
+          "format": "double",
+          "type": "number",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "recurringExtendedSuggestedPrice": {
+          "format": "double",
+          "type": "number",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "recurringGst": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringPrice": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringPriceModifier": {
+          "type": "string"
+        },
+        "recurringPst": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringSuggestedPrice": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringTax": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringTotal": {
+          "format": "double",
+          "type": "number"
+        },
+        "replacementSku": {
+          "type": "string"
+        },
+        "shortDescription": {
+          "type": "string"
+        },
+        "sortOrder": {
+          "format": "int32",
+          "type": "integer",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "source": {
+          "type": "string"
+        },
+        "sourceManufacturerId": {
+          "type": "string"
+        },
+        "sourceManufacturerName": {
+          "type": "string"
+        },
+        "sourceSelectionDetails": {
+          "type": "string"
+        },
+        "sourceVendorId": {
+          "type": "string"
+        },
+        "sourceVendorName": {
+          "type": "string"
+        },
+        "startingCost": {
+          "format": "double",
+          "type": "number"
+        },
+        "stateGovPrice": {
+          "format": "double",
+          "type": "number"
+        },
+        "suggestedPrice": {
+          "format": "double",
+          "type": "number"
+        },
+        "svcSpread": {
+          "format": "double",
+          "type": "number"
+        },
+        "tax": {
+          "format": "double",
+          "type": "number",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "taxCode": {
+          "type": "string"
+        },
+        "taxConverted": {
+          "format": "double",
+          "type": "number",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "taxRate": {
+          "format": "double",
+          "type": "number",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "thumbnail": {
+          "format": "byte",
+          "type": "string"
+        },
+        "totalWeight": {
+          "format": "double",
+          "type": "number"
+        },
+        "uom": {
+          "type": "string"
+        },
+        "uomFactor": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "uomWeight": {
+          "format": "double",
+          "type": "number"
+        },
+        "uop": {
+          "type": "string"
+        },
+        "uopFactor": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "upcNumber": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "vendorPartNumber": {
+          "type": "string"
+        },
+        "warehouse": {
+          "type": "string"
+        },
+        "warehouseCode": {
+          "type": "string"
+        },
+        "zCustomBool1": {
+          "type": "boolean"
+        },
+        "zCustomBool10": {
+          "type": "boolean"
+        },
+        "zCustomBool2": {
+          "type": "boolean"
+        },
+        "zCustomBool3": {
+          "type": "boolean"
+        },
+        "zCustomBool4": {
+          "type": "boolean"
+        },
+        "zCustomBool5": {
+          "type": "boolean"
+        },
+        "zCustomBool6": {
+          "type": "boolean"
+        },
+        "zCustomBool7": {
+          "type": "boolean"
+        },
+        "zCustomBool8": {
+          "type": "boolean"
+        },
+        "zCustomBool9": {
+          "type": "boolean"
+        },
+        "zCustomDate1": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "zCustomDate2": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "zCustomDecimal1": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomDecimal10": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomDecimal2": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomDecimal3": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomDecimal4": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomDecimal5": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomDecimal6": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomDecimal7": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomDecimal8": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomDecimal9": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomNotes1": {
+          "type": "string"
+        },
+        "zCustomNotes10": {
+          "type": "string"
+        },
+        "zCustomNotes2": {
+          "type": "string"
+        },
+        "zCustomNotes3": {
+          "type": "string"
+        },
+        "zCustomNotes4": {
+          "type": "string"
+        },
+        "zCustomNotes5": {
+          "type": "string"
+        },
+        "zCustomNotes6": {
+          "type": "string"
+        },
+        "zCustomNotes7": {
+          "type": "string"
+        },
+        "zCustomNotes8": {
+          "type": "string"
+        },
+        "zCustomNotes9": {
+          "type": "string"
+        },
+        "zCustomString1": {
+          "type": "string"
+        },
+        "zCustomString10": {
+          "type": "string"
+        },
+        "zCustomString11": {
+          "type": "string"
+        },
+        "zCustomString12": {
+          "type": "string"
+        },
+        "zCustomString13": {
+          "type": "string"
+        },
+        "zCustomString14": {
+          "type": "string"
+        },
+        "zCustomString15": {
+          "type": "string"
+        },
+        "zCustomString16": {
+          "type": "string"
+        },
+        "zCustomString17": {
+          "type": "string"
+        },
+        "zCustomString18": {
+          "type": "string"
+        },
+        "zCustomString19": {
+          "type": "string"
+        },
+        "zCustomString2": {
+          "type": "string"
+        },
+        "zCustomString20": {
+          "type": "string"
+        },
+        "zCustomString21": {
+          "type": "string"
+        },
+        "zCustomString22": {
+          "type": "string"
+        },
+        "zCustomString23": {
+          "type": "string"
+        },
+        "zCustomString24": {
+          "type": "string"
+        },
+        "zCustomString25": {
+          "type": "string"
+        },
+        "zCustomString3": {
+          "type": "string"
+        },
+        "zCustomString4": {
+          "type": "string"
+        },
+        "zCustomString5": {
+          "type": "string"
+        },
+        "zCustomString6": {
+          "type": "string"
+        },
+        "zCustomString7": {
+          "type": "string"
+        },
+        "zCustomString8": {
+          "type": "string"
+        },
+        "zCustomString9": {
+          "type": "string"
+        },
+        "zCustomText1": {
+          "type": "string"
+        }
+      }
+    },
+    "JsonPatchDocument[QuoteItemView]": {
+      "type": "object",
+      "properties": {
+        "operations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Operation[QuoteItemView]"
+          },
+          "description": "This field is Read Only.", "readOnly": true
+        }
+      },
+      "example": [
+        {
+          "value": "New Value",
+          "path": "/property",
+          "op": "replace"
+        },
+        {
+          "value": "New Value",
+          "path": "/property",
+          "op": "add"
+        },
+        {
+          "path": "/property",
+          "op": "remove"
+        }
+      ]
+    },
+    "Operation[QuoteItemView]": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "object"
+        },
+        "path": {
+          "type": "string"
+        },
+        "op": {
+          "type": "string"
+        },
+        "from": {
+          "type": "string"
+        }
+      }
+    },
+    "QuoteQueryModel": {
+      "type": "object",
+      "properties": {
+        "showAllVersions": {
+          "description": "Set true for results from deleted or archived quotes. Defaults to false.",
+          "type": "boolean"
+        },
+        "includeFields": {
+          "description": "Comma separated list of fields to return.",
+          "type": "string"
+        },
+        "conditions": {
+          "description": "Conditional retrieve statements.",
+          "type": "string"
+        },
+        "page": {
+          "format": "int32",
+          "description": "Page of results to get. 1-index based.",
+          "type": "integer"
+        },
+        "pageSize": {
+          "format": "int32",
+          "description": "Page size of results to get. Max size 1000, default 50.",
+          "type": "integer"
+        }
+      }
+    },
+    "QuoteView": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "quoteNumber": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "quoteVersion": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "id": {
+          "type": "string"
+        },
+        "accountName": {
+          "type": "string"
+        },
+        "approvalAmount": {
+          "format": "double",
+          "type": "number"
+        },
+        "approvalComment": {
+          "type": "string"
+        },
+        "approvalMargin": {
+          "format": "double",
+          "type": "number"
+        },
+        "approvalMode": {
+          "type": "string"
+        },
+        "approvalQuoteForm": {
+          "type": "string"
+        },
+        "approvalReason": {
+          "type": "string"
+        },
+        "approvalStatus": {
+          "type": "string"
+        },
+        "approvedByUser": {
+          "type": "string"
+        },
+        "approvedDate": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "baseCurrency": {
+          "type": "string"
+        },
+        "crmOpGroup": {
+          "type": "string"
+        },
+        "contactName": {
+          "type": "string"
+        },
+        "contractEndDate": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "contractStartDate": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "costChangesCount": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "createDate": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "createNotes": {
+          "type": "string"
+        },
+        "customerSignatureCapture": {
+          "$ref": "#/definitions/ReferenceLink"
+        },
+        "salesForceDefaultOppType": {
+          "type": "string"
+        },
+        "salesForceDefaultPriceList": {
+          "type": "string"
+        },
+        "salesForceDefaultRecurringTermType": {
+          "type": "string"
+        },
+        "defaultReportList": {
+          "type": "string"
+        },
+        "defaultSuccessListProfile": {
+          "type": "string"
+        },
+        "defaultTermPeriods": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "defaultVideoList": {
+          "type": "string"
+        },
+        "deliveredDate": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "discountAmount": {
+          "format": "double",
+          "type": "number"
+        },
+        "expectedCloseDate": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "expirationDate": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "externalReferenceQuoteDemandId": {
+          "type": "string"
+        },
+        "greatAmericaDefaultRateCard": {
+          "type": "string"
+        },
+        "grossMargin": {
+          "format": "double",
+          "type": "number"
+        },
+        "grossMarginAmount": {
+          "format": "double",
+          "type": "number"
+        },
+        "gst": {
+          "format": "double",
+          "type": "number"
+        },
+        "gstConverted": {
+          "format": "double",
+          "type": "number"
+        },
+        "htmlAgreement": {
+          "type": "string"
+        },
+        "htmlNotes1": {
+          "type": "string"
+        },
+        "htmlNotes2": {
+          "type": "string"
+        },
+        "crmOpportunityId": {
+          "type": "string"
+        },
+        "customer": {
+          "$ref": "#/definitions/ReferenceLink"
+        },
+        "sourceCampaignId": {
+          "type": "string"
+        },
+        "includeZeroSuggestedInDiscount": {
+          "type": "boolean"
+        },
+        "insideRep": {
+          "type": "string"
+        },
+        "invoicePostDate": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "invoicePostStatus": {
+          "type": "string"
+        },
+        "invoicePostUser": {
+          "type": "string"
+        },
+        "isAccepted": {
+          "type": "boolean"
+        },
+        "isArchive": {
+          "type": "boolean"
+        },
+        "isLost": {
+          "type": "boolean"
+        },
+        "isManagerApproved": {
+          "type": "boolean"
+        },
+        "isQuoteDemand": {
+          "type": "boolean"
+        },
+        "isSent": {
+          "type": "boolean"
+        },
+        "isTaxCalculated": {
+          "type": "boolean"
+        },
+        "orderPorterHasFirstVisitOccurred": {
+          "type": "boolean"
+        },
+        "orderPorterIsUploaded": {
+          "type": "boolean"
+        },
+        "isRequestQuote": {
+          "type": "boolean"
+        },
+        "isRequestTemplate": {
+          "type": "boolean"
+        },
+        "keywords": {
+          "type": "string"
+        },
+        "locationId": {
+          "type": "string"
+        },
+        "longDescription": {
+          "type": "string"
+        },
+        "lostReason": {
+          "type": "string"
+        },
+        "markup": {
+          "format": "double",
+          "type": "number"
+        },
+        "masterAgreement": {
+          "type": "string"
+        },
+        "masterAgreementNumber": {
+          "type": "string"
+        },
+        "modifyDate": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "netMargin": {
+          "format": "double",
+          "type": "number"
+        },
+        "netSuiteSubsidiary": {
+          "type": "string"
+        },
+        "optionalAmount": {
+          "format": "double",
+          "type": "number"
+        },
+        "optionalAmountConverted": {
+          "format": "double",
+          "type": "number"
+        },
+        "orderPorterSignedDate": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "isOrderPorterApproved": {
+          "type": "boolean"
+        },
+        "orderPorterDownPaymentMinimum": {
+          "format": "double",
+          "type": "number"
+        },
+        "orderPorterDownPaymentPercent": {
+          "format": "double",
+          "type": "number"
+        },
+        "orderPorterEmailSignature": {
+          "type": "string"
+        },
+        "showOrderPorterESign": {
+          "type": "boolean"
+        },
+        "orderPorterFilteredIp": {
+          "type": "string"
+        },
+        "orderPorterFirstVisitDate": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "orderPorterFullPaymentAllowed": {
+          "type": "boolean"
+        },
+        "orderPorterGroup": {
+          "type": "string"
+        },
+        "orderPorterInitialsSig": {
+          "type": "string"
+        },
+        "orderPorterPasscode": {
+          "type": "string"
+        },
+        "orderPorterPaymentMode": {
+          "type": "string"
+        },
+        "orderPorterPreviewPicture": {
+          "$ref": "#/definitions/ReferenceLink"
+        },
+        "orderPorterShowImage": {
+          "type": "boolean"
+        },
+        "orderPorterShowItemOptionalCheckbox": {
+          "type": "boolean"
+        },
+        "orderPorterShowLineDetails": {
+          "type": "boolean"
+        },
+        "orderPorterShowQuantity": {
+          "type": "boolean"
+        },
+        "orderPorterShowSignature": {
+          "type": "boolean"
+        },
+        "orderPorterShowTabOptionalCheckbox": {
+          "type": "boolean"
+        },
+        "orderPorterSignedIp": {
+          "type": "string"
+        },
+        "orderPorterTemplate": {
+          "type": "string"
+        },
+        "orderPorterTheme": {
+          "type": "string"
+        },
+        "orderPorterVisits": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "originalQuoteId": {
+          "type": "string"
+        },
+        "overrideRate": {
+          "format": "double",
+          "type": "number"
+        },
+        "primaryRep": {
+          "type": "string"
+        },
+        "printPackageHeaderPrice": {
+          "type": "boolean"
+        },
+        "printPackageItemPrice": {
+          "type": "boolean"
+        },
+        "showPackageHeader": {
+          "type": "boolean"
+        },
+        "showPackageItems": {
+          "type": "boolean"
+        },
+        "peerReviewDocument": {
+          "type": "string"
+        },
+        "peerReviewStatus": {
+          "type": "string"
+        },
+        "picture": {
+          "$ref": "#/definitions/ReferenceLink"
+        },
+        "probability": {
+          "format": "double",
+          "type": "number"
+        },
+        "promiseDate": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "promiseDateChangesCount": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "pst": {
+          "format": "double",
+          "type": "number"
+        },
+        "pstConverted": {
+          "format": "double",
+          "type": "number"
+        },
+        "publishNumber": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "purchaseOrderNumber": {
+          "type": "string"
+        },
+        "quickbooksTemplate": {
+          "type": "string"
+        },
+        "quoteCost": {
+          "format": "double",
+          "type": "number"
+        },
+        "quoteCreator": {
+          "type": "string"
+        },
+        "quoteNotes": {
+          "type": "string"
+        },
+        "quotePreface": {
+          "type": "string"
+        },
+        "quoteTotal": {
+          "format": "double",
+          "type": "number"
+        },
+        "quoteType": {
+          "type": "string"
+        },
+        "quoteStatus": {
+          "type": "string"
+        },
+        "recurringCost": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringDiscountAmount": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringGst": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringOptionalAmount": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringPst": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringSubtotal": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringSuggestedDiscountAmount": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringSuggestedTotal": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringTax": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringTotal": {
+          "format": "double",
+          "type": "number"
+        },
+        "requestDate": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "requestedBy": {
+          "type": "string"
+        },
+        "requiresApproval": {
+          "type": "boolean"
+        },
+        "requiresNameChange": {
+          "type": "boolean"
+        },
+        "forceManagerApprovalScript": {
+          "type": "boolean"
+        },
+        "selectedTermsTotal": {
+          "format": "double",
+          "type": "number"
+        },
+        "shippingSubtotal": {
+          "format": "double",
+          "type": "number"
+        },
+        "shippingTax": {
+          "format": "double",
+          "type": "number"
+        },
+        "shortDescription": {
+          "type": "string"
+        },
+        "subtotal": {
+          "format": "double",
+          "type": "number"
+        },
+        "subtotalConverted": {
+          "format": "double",
+          "type": "number"
+        },
+        "isSuccessListDisabled": {
+          "type": "boolean"
+        },
+        "suggestedDiscountAmount": {
+          "format": "double",
+          "type": "number"
+        },
+        "suggestedTotal": {
+          "format": "double",
+          "type": "number"
+        },
+        "targetDate": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "tax": {
+          "format": "double",
+          "type": "number"
+        },
+        "taxCode": {
+          "type": "string"
+        },
+        "taxRate": {
+          "format": "double",
+          "type": "number"
+        },
+        "termsAndConditions": {
+          "type": "string"
+        },
+        "versionComment": {
+          "type": "string"
+        },
+        "autoTaskQuoteNumber": {
+          "type": "string"
+        },
+        "winForm": {
+          "type": "string"
+        },
+        "wonOrLostDate": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "zCustomQuoteBool1": {
+          "type": "boolean"
+        },
+        "zCustomQuoteBool10": {
+          "type": "boolean"
+        },
+        "zCustomQuoteBool2": {
+          "type": "boolean"
+        },
+        "zCustomQuoteBool3": {
+          "type": "boolean"
+        },
+        "zCustomQuoteBool4": {
+          "type": "boolean"
+        },
+        "zCustomQuoteBool5": {
+          "type": "boolean"
+        },
+        "zCustomQuoteBool6": {
+          "type": "boolean"
+        },
+        "zCustomQuoteBool7": {
+          "type": "boolean"
+        },
+        "zCustomQuoteBool8": {
+          "type": "boolean"
+        },
+        "zCustomQuoteBool9": {
+          "type": "boolean"
+        },
+        "zCustomQuoteDate1": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "zCustomQuoteDate2": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "zCustomQuoteDecimal1": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomQuoteDecimal10": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomQuoteDecimal11": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomQuoteDecimal12": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomQuoteDecimal13": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomQuoteDecimal14": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomQuoteDecimal15": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomQuoteDecimal16": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomQuoteDecimal17": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomQuoteDecimal18": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomQuoteDecimal19": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomQuoteDecimal2": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomQuoteDecimal20": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomQuoteDecimal3": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomQuoteDecimal4": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomQuoteDecimal5": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomQuoteDecimal6": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomQuoteDecimal7": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomQuoteDecimal8": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomQuoteDecimal9": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomQuoteString1": {
+          "type": "string"
+        },
+        "zCustomQuoteString10": {
+          "type": "string"
+        },
+        "zCustomQuoteString11": {
+          "type": "string"
+        },
+        "zCustomQuoteString12": {
+          "type": "string"
+        },
+        "zCustomQuoteString13": {
+          "type": "string"
+        },
+        "zCustomQuoteString14": {
+          "type": "string"
+        },
+        "zCustomQuoteString15": {
+          "type": "string"
+        },
+        "zCustomQuoteString2": {
+          "type": "string"
+        },
+        "zCustomQuoteString3": {
+          "type": "string"
+        },
+        "zCustomQuoteString4": {
+          "type": "string"
+        },
+        "zCustomQuoteString5": {
+          "type": "string"
+        },
+        "zCustomQuoteString6": {
+          "type": "string"
+        },
+        "zCustomQuoteString7": {
+          "type": "string"
+        },
+        "zCustomQuoteString8": {
+          "type": "string"
+        },
+        "zCustomQuoteString9": {
+          "type": "string"
+        }
+      }
+    },
+    "JsonPatchDocument[QuoteView]": {
+      "type": "object",
+      "properties": {
+        "operations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Operation[QuoteView]"
+          },
+          "description": "This field is Read Only.", "readOnly": true
+        }
+      },
+      "example": [
+        {
+          "value": "New Value",
+          "path": "/property",
+          "op": "replace"
+        },
+        {
+          "value": "New Value",
+          "path": "/property",
+          "op": "add"
+        },
+        {
+          "path": "/property",
+          "op": "remove"
+        }
+      ]
+    },
+    "Operation[QuoteView]": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "object"
+        },
+        "path": {
+          "type": "string"
+        },
+        "op": {
+          "type": "string"
+        },
+        "from": {
+          "type": "string"
+        }
+      }
+    },
+    "QuoteTabsQueryModel": {
+      "type": "object",
+      "properties": {
+        "showAllVersions": {
+          "description": "Set true for results from deleted or archived quotes. Set false to omit records from deleted or archive quotes. Defaults to true.",
+          "type": "boolean"
+        },
+        "includeFields": {
+          "description": "Comma separated list of fields to return.",
+          "type": "string"
+        },
+        "conditions": {
+          "description": "Conditional retrieve statements.",
+          "type": "string"
+        },
+        "page": {
+          "format": "int32",
+          "description": "Page of results to get. 1-index based.",
+          "type": "integer"
+        },
+        "pageSize": {
+          "format": "int32",
+          "description": "Page size of results to get. Max size 1000, default 50.",
+          "type": "integer"
+        }
+      }
+    },
+    "QuoteTabView": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "approvalContentHash": {
+          "type": "string"
+        },
+        "approvalOnChange": {
+          "type": "boolean"
+        },
+        "audio": {
+          "format": "byte",
+          "type": "string"
+        },
+        "canAddItems": {
+          "type": "boolean"
+        },
+        "canChangePrice": {
+          "type": "boolean"
+        },
+        "canChangeTabName": {
+          "type": "boolean"
+        },
+        "canDeleteItems": {
+          "type": "boolean"
+        },
+        "canDeleteTab": {
+          "type": "boolean"
+        },
+        "configId": {
+          "type": "string"
+        },
+        "connectWiseIntegratorOverride": {
+          "type": "string"
+        },
+        "connectWiseOpInclude": {
+          "type": "boolean"
+        },
+        "connectWiseType": {
+          "type": "string"
+        },
+        "contractEndDate": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "contractStartDate": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "cost": {
+          "format": "double",
+          "type": "number"
+        },
+        "cwForceTabForecast": {
+          "type": "boolean"
+        },
+        "cwForecastId": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "disableAutoEtilizeSourcing": {
+          "type": "boolean"
+        },
+        "discount": {
+          "format": "double",
+          "type": "number"
+        },
+        "discountAmount": {
+          "format": "double",
+          "type": "number"
+        },
+        "discountAmountConverted": {
+          "format": "double",
+          "type": "number"
+        },
+        "dynamicGpProfileId": {
+          "type": "string"
+        },
+        "forceOpportunityItems": {
+          "type": "boolean"
+        },
+        "forceZeroQuantity": {
+          "type": "boolean"
+        },
+        "goToProductSearchWhenTabIsEmpty": {
+          "type": "boolean"
+        },
+        "gridFormat": {
+          "type": "string"
+        },
+        "grossMargin": {
+          "format": "double",
+          "type": "number"
+        },
+        "grossMarginAmount": {
+          "format": "double",
+          "type": "number"
+        },
+        "groupRunningCost": {
+          "format": "double",
+          "type": "number"
+        },
+        "groupRunningOptionAmount": {
+          "format": "double",
+          "type": "number"
+        },
+        "groupRunningRecurringCost": {
+          "format": "double",
+          "type": "number"
+        },
+        "groupRunningRecurringOptionAmount": {
+          "format": "double",
+          "type": "number"
+        },
+        "groupRunningRecurringSubtotal": {
+          "format": "double",
+          "type": "number"
+        },
+        "groupRunningRecurringTax": {
+          "format": "double",
+          "type": "number"
+        },
+        "groupRunningRecurringTotal": {
+          "format": "double",
+          "type": "number"
+        },
+        "groupRunningSubtotal": {
+          "format": "double",
+          "type": "number"
+        },
+        "groupRunningTax": {
+          "format": "double",
+          "type": "number"
+        },
+        "groupRunningTotal": {
+          "format": "double",
+          "type": "number"
+        },
+        "gst": {
+          "format": "double",
+          "type": "number"
+        },
+        "gstConverted": {
+          "format": "double",
+          "type": "number"
+        },
+        "hasLimitOnNewItems": {
+          "type": "boolean"
+        },
+        "hideMfp": {
+          "type": "boolean"
+        },
+        "htmlNotes": {
+          "type": "string"
+        },
+        "idRecurringRevenue": {
+          "type": "string"
+        },
+        "ignorePackageHeaderOnOpportunities": {
+          "type": "boolean"
+        },
+        "invoiceRouting": {
+          "type": "string"
+        },
+        "isGroupQuantityMaster": {
+          "type": "boolean"
+        },
+        "isHidden": {
+          "type": "boolean"
+        },
+        "isOptional": {
+          "type": "boolean"
+        },
+        "isPrinted": {
+          "type": "boolean"
+        },
+        "isProtectedTab": {
+          "type": "boolean"
+        },
+        "isShippingTab": {
+          "type": "boolean"
+        },
+        "isSourcingExempt": {
+          "type": "boolean"
+        },
+        "isTabTemplate": {
+          "type": "boolean"
+        },
+        "isTargetDiscount": {
+          "type": "boolean"
+        },
+        "isTargetListDiscount": {
+          "type": "boolean"
+        },
+        "isTargetMargin": {
+          "type": "boolean"
+        },
+        "isTargetMarkup": {
+          "type": "boolean"
+        },
+        "isTaxable": {
+          "type": "boolean"
+        },
+        "isTotalsIncluded": {
+          "type": "boolean"
+        },
+        "layoutGroup": {
+          "type": "string"
+        },
+        "longDescription": {
+          "type": "string"
+        },
+        "markup": {
+          "format": "double",
+          "type": "number"
+        },
+        "netMargin": {
+          "format": "double",
+          "type": "number"
+        },
+        "netSuiteType": {
+          "type": "string"
+        },
+        "oppConvertRouting": {
+          "type": "string"
+        },
+        "oppRecurringAsAdjustment": {
+          "type": "boolean"
+        },
+        "optionalAmount": {
+          "format": "double",
+          "type": "number"
+        },
+        "optionalAmountConverted": {
+          "format": "double",
+          "type": "number"
+        },
+        "optionalRecurring": {
+          "format": "double",
+          "type": "number"
+        },
+        "optionalSubtotal": {
+          "format": "double",
+          "type": "number"
+        },
+        "optionalTax": {
+          "format": "double",
+          "type": "number"
+        },
+        "orderPorterGroup": {
+          "type": "string"
+        },
+        "orderPorterRequired": {
+          "type": "boolean"
+        },
+        "owner": {
+          "type": "string"
+        },
+        "pageBreak": {
+          "type": "boolean"
+        },
+        "periods": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "price": {
+          "format": "double",
+          "type": "number"
+        },
+        "primarySourceGroup": {
+          "type": "string"
+        },
+        "productSearchFormConfiguration": {
+          "type": "string"
+        },
+        "productSearchPrefillMappingSet": {
+          "type": "string"
+        },
+        "pst": {
+          "format": "double",
+          "type": "number"
+        },
+        "pstConverted": {
+          "format": "double",
+          "type": "number"
+        },
+        "quickBooksType": {
+          "type": "string"
+        },
+        "quote": {
+          "$ref": "#/definitions/ReferenceLink"
+        },
+        "recurringCost": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringDiscount": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringDiscountAmount": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringGrossMargin": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringGrossMarginAmount": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringGst": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringIsTaxable": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringLabel": {
+          "type": "string"
+        },
+        "recurringMarkup": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringNetMargin": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringOptionalSubtotal": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringOptionalTax": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringPst": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringSubtotal": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringSuggestedDiscountAmount": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringSuggestedTotal": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringTargetPriceControlType": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "recurringTargetPriceControlValue": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringTax": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringTotal": {
+          "format": "double",
+          "type": "number"
+        },
+        "rtfNotes": {
+          "type": "string"
+        },
+        "showLineItemQuickFilter": {
+          "type": "boolean"
+        },
+        "subtotal": {
+          "format": "double",
+          "type": "number"
+        },
+        "subtotalConverted": {
+          "format": "double",
+          "type": "number"
+        },
+        "suggestedDiscountAmount": {
+          "format": "double",
+          "type": "number"
+        },
+        "suggestedTotal": {
+          "format": "double",
+          "type": "number"
+        },
+        "tabColor": {
+          "type": "string"
+        },
+        "tabDescription": {
+          "type": "string"
+        },
+        "tabGroup": {
+          "type": "string"
+        },
+        "tabIdentifier": {
+          "type": "string"
+        },
+        "tabNotes": {
+          "type": "string"
+        },
+        "tabNumber": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "tabSheetHtml1": {
+          "type": "string"
+        },
+        "tabSheetHtml2": {
+          "type": "string"
+        },
+        "tabSheetHtml3": {
+          "type": "string"
+        },
+        "tabSheetHtml4": {
+          "type": "string"
+        },
+        "tabSheetHtml5": {
+          "type": "string"
+        },
+        "tabTotal": {
+          "format": "double",
+          "type": "number"
+        },
+        "tabTotalConverted": {
+          "format": "double",
+          "type": "number"
+        },
+        "targetDiscount": {
+          "format": "double",
+          "type": "number"
+        },
+        "targetMargin": {
+          "format": "double",
+          "type": "number"
+        },
+        "targetMarkup": {
+          "format": "double",
+          "type": "number"
+        },
+        "targetSheet1": {
+          "type": "string"
+        },
+        "targetSheet2": {
+          "type": "string"
+        },
+        "targetSheet3": {
+          "type": "string"
+        },
+        "targetSheet4": {
+          "type": "string"
+        },
+        "targetSheet5": {
+          "type": "string"
+        },
+        "tax": {
+          "format": "double",
+          "type": "number"
+        },
+        "taxCode": {
+          "type": "string"
+        },
+        "taxConverted": {
+          "format": "double",
+          "type": "number"
+        },
+        "taxRate": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomTabBool1": {
+          "type": "boolean"
+        },
+        "zCustomTabBool10": {
+          "type": "boolean"
+        },
+        "zCustomTabBool2": {
+          "type": "boolean"
+        },
+        "zCustomTabBool3": {
+          "type": "boolean"
+        },
+        "zCustomTabBool4": {
+          "type": "boolean"
+        },
+        "zCustomTabBool5": {
+          "type": "boolean"
+        },
+        "zCustomTabBool6": {
+          "type": "boolean"
+        },
+        "zCustomTabBool7": {
+          "type": "boolean"
+        },
+        "zCustomTabBool8": {
+          "type": "boolean"
+        },
+        "zCustomTabBool9": {
+          "type": "boolean"
+        },
+        "zCustomTabDate1": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "zCustomTabDate2": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "zCustomTabDecimal1": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomTabDecimal10": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomTabDecimal2": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomTabDecimal3": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomTabDecimal4": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomTabDecimal5": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomTabDecimal6": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomTabDecimal7": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomTabDecimal8": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomTabDecimal9": {
+          "format": "double",
+          "type": "number"
+        },
+        "zCustomTabString1": {
+          "type": "string"
+        },
+        "zCustomTabString10": {
+          "type": "string"
+        },
+        "zCustomTabString11": {
+          "type": "string"
+        },
+        "zCustomTabString12": {
+          "type": "string"
+        },
+        "zCustomTabString13": {
+          "type": "string"
+        },
+        "zCustomTabString14": {
+          "type": "string"
+        },
+        "zCustomTabString15": {
+          "type": "string"
+        },
+        "zCustomTabString2": {
+          "type": "string"
+        },
+        "zCustomTabString3": {
+          "type": "string"
+        },
+        "zCustomTabString4": {
+          "type": "string"
+        },
+        "zCustomTabString5": {
+          "type": "string"
+        },
+        "zCustomTabString6": {
+          "type": "string"
+        },
+        "zCustomTabString7": {
+          "type": "string"
+        },
+        "zCustomTabString8": {
+          "type": "string"
+        },
+        "zCustomTabString9": {
+          "type": "string"
+        }
+      }
+    },
+    "QuoteTermsQueryModel": {
+      "type": "object",
+      "properties": {
+        "includeFields": {
+          "description": "Comma separated list of fields to return.",
+          "type": "string"
+        },
+        "conditions": {
+          "description": "Conditional retrieve statements.",
+          "type": "string"
+        },
+        "page": {
+          "format": "int32",
+          "description": "Page of results to get. 1-index based.",
+          "type": "integer"
+        },
+        "pageSize": {
+          "format": "int32",
+          "description": "Page size of results to get. Max size 1000, default 50.",
+          "type": "integer"
+        }
+      }
+    },
+    "QuoteTermView": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "idQuote": {
+          "type": "string",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "periods": {
+          "format": "double",
+          "type": "number"
+        },
+        "interestRate": {
+          "format": "double",
+          "type": "number"
+        },
+        "downPayment": {
+          "format": "double",
+          "type": "number"
+        },
+        "discountAmount": {
+          "format": "double",
+          "type": "number"
+        },
+        "discountPercent": {
+          "format": "double",
+          "type": "number"
+        },
+        "totalAmount": {
+          "format": "double",
+          "type": "number",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "principal": {
+          "format": "double",
+          "type": "number",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "periodPaymentAmount": {
+          "format": "double",
+          "type": "number",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "periodInterval": {
+          "type": "string"
+        },
+        "isSelected": {
+          "type": "boolean"
+        },
+        "recurringDiscountAmount": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringDiscountPercent": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringTotalAmount": {
+          "format": "double",
+          "type": "number",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "financingGroup": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "recurringBeforeDiscount": {
+          "format": "double",
+          "type": "number",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "tabGroup": {
+          "type": "string"
+        },
+        "groupSort": {
+          "format": "double",
+          "type": "number"
+        },
+        "nameSort": {
+          "format": "double",
+          "type": "number"
+        },
+        "tabName": {
+          "type": "string"
+        },
+        "totalAmountOverride": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringTotalAmountOverride": {
+          "format": "double",
+          "type": "number"
+        },
+        "idRecurringRevenue": {
+          "type": "string"
+        },
+        "recurringPeriods": {
+          "format": "double",
+          "type": "number"
+        },
+        "recurringTotalAggregated": {
+          "format": "double",
+          "type": "number",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "subscriptionName": {
+          "type": "string"
+        },
+        "isAutomaticallyBillable": {
+          "type": "boolean"
+        },
+        "overrideStartDate": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "startDateMode": {
+          "type": "string"
+        },
+        "authorizeNetIntervalUnit": {
+          "type": "string"
+        },
+        "authorizeNetIntervalLength": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "authorizeNetTotalOccurances": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "intervalToStart": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "oppRecurringAsAdjustment": {
+          "type": "boolean"
+        },
+        "spreadOneTime": {
+          "type": "boolean"
+        },
+        "isPrinted": {
+          "type": "boolean"
+        },
+        "recurringRevenueLabel": {
+          "type": "string",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "tabExcludeFilter": {
+          "type": "string"
+        },
+        "tabIncludeFilter": {
+          "type": "string"
+        },
+        "isRoundedPayments": {
+          "type": "boolean"
+        },
+        "obeyStandardTabFilters": {
+          "type": "boolean"
+        },
+        "leasingName": {
+          "type": "string"
+        },
+        "leasingRate": {
+          "format": "double",
+          "type": "number"
+        },
+        "leasingRateOverride": {
+          "format": "double",
+          "type": "number"
+        },
+        "isLease": {
+          "type": "boolean"
+        },
+        "leaseMonthlyAmount": {
+          "format": "double",
+          "type": "number"
+        },
+        "leaseDownPayment": {
+          "format": "double",
+          "type": "number"
+        },
+        "idLeasingRates": {
+          "type": "string"
+        },
+        "leaseSource": {
+          "type": "string"
+        },
+        "leaseType": {
+          "type": "string"
+        },
+        "leaseTypeDescription": {
+          "type": "string"
+        },
+        "leaseRateCardNumber": {
+          "type": "string"
+        },
+        "forceIncludeInForecast": {
+          "type": "boolean"
+        },
+        "forceExcludeInForecast": {
+          "type": "boolean"
+        },
+        "cost": {
+          "format": "double",
+          "type": "number",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "recurringCost": {
+          "format": "double",
+          "type": "number",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "agreementType": {
+          "type": "string"
+        },
+        "agreementStartDateDefault": {
+          "type": "string"
+        }
+      }
+    },
+    "JsonPatchDocument[QuoteTermView]": {
+      "type": "object",
+      "properties": {
+        "operations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Operation[QuoteTermView]"
+          },
+          "description": "This field is Read Only.", "readOnly": true
+        }
+      },
+      "example": [
+        {
+          "value": "New Value",
+          "path": "/property",
+          "op": "replace"
+        },
+        {
+          "value": "New Value",
+          "path": "/property",
+          "op": "add"
+        },
+        {
+          "path": "/property",
+          "op": "remove"
+        }
+      ]
+    },
+    "Operation[QuoteTermView]": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "object"
+        },
+        "path": {
+          "type": "string"
+        },
+        "op": {
+          "type": "string"
+        },
+        "from": {
+          "type": "string"
+        }
+      }
+    },
+    "RecurringRevenuesQueryModel": {
+      "type": "object",
+      "properties": {
+        "includeFields": {
+          "description": "Comma separated list of fields to return.",
+          "type": "string"
+        },
+        "conditions": {
+          "description": "Conditional retrieve statements.",
+          "type": "string"
+        },
+        "page": {
+          "format": "int32",
+          "description": "Page of results to get. 1-index based.",
+          "type": "integer"
+        },
+        "pageSize": {
+          "format": "int32",
+          "description": "Page size of results to get. Max size 1000, default 50.",
+          "type": "integer"
+        }
+      }
+    },
+    "RecurringRevenueView": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "description": {
+          "type": "string"
+        },
+        "periodType": {
+          "type": "string"
+        },
+        "duration": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "externalXref": {
+          "type": "string"
+        },
+        "cycle": {
+          "type": "string"
+        }
+      }
+    },
+    "ViewQueryModel": {
+      "type": "object",
+      "properties": {
+        "includeFields": {
+          "description": "Comma separated list of fields to return.",
+          "type": "string"
+        },
+        "conditions": {
+          "description": "Conditional retrieve statements.",
+          "type": "string"
+        },
+        "page": {
+          "format": "int32",
+          "description": "Page of results to get. 1-index based.",
+          "type": "integer"
+        },
+        "pageSize": {
+          "format": "int32",
+          "description": "Page size of results to get. Max size 1000, default 50.",
+          "type": "integer"
+        }
+      }
+    },
+    "TaxCodeView": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "taxCode": {
+          "type": "string"
+        },
+        "taxRate": {
+          "format": "double",
+          "type": "number"
+        },
+        "gstRate": {
+          "format": "double",
+          "type": "number"
+        },
+        "pstRate": {
+          "format": "double",
+          "type": "number"
+        },
+        "taxExternalXref": {
+          "type": "string"
+        },
+        "isCalculatedExternally": {
+          "type": "boolean"
+        }
+      }
+    },
+    "UserQueryModel": {
+      "type": "object",
+      "properties": {
+        "includeFields": {
+          "description": "Comma separated list of fields to return.",
+          "type": "string"
+        },
+        "conditions": {
+          "description": "Conditional retrieve statements.",
+          "type": "string"
+        },
+        "page": {
+          "format": "int32",
+          "description": "Page of results to get. 1-index based.",
+          "type": "integer"
+        },
+        "pageSize": {
+          "format": "int32",
+          "description": "Page size of results to get. Max size 1000, default 50.",
+          "type": "integer"
+        }
+      }
+    },
+    "UserView": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "isInactiveUser": {
+          "type": "boolean",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "isReadOnlyUser": {
+          "type": "boolean",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "failedLoginCount": {
+          "format": "int32",
+          "type": "integer",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "isApprover": {
+          "type": "boolean",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "isPriceChanger": {
+          "type": "boolean",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "canAccessAllQuotes": {
+          "type": "boolean",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "isAdministrator": {
+          "type": "boolean",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "isDeveloper": {
+          "type": "boolean",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "isApiUser": {
+          "type": "boolean",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "isContentManager": {
+          "type": "boolean",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "isStandardPlus": {
+          "type": "boolean",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "alwaysRequireManagerApproval": {
+          "type": "boolean",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "isPublisher": {
+          "type": "boolean",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "isManualWinner": {
+          "type": "boolean",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "electronicOrderUser": {
+          "type": "boolean",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "idProfileTeams": {
+          "type": "string",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "locationId": {
+          "type": "string"
+        },
+        "managerUserId": {
+          "type": "string",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "approverUserId": {
+          "type": "string",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "userName": {
+          "type": "string",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "firstName": {
+          "type": "string"
+        },
+        "lastName": {
+          "type": "string"
+        },
+        "presentedName": {
+          "type": "string"
+        },
+        "jobTitle": {
+          "type": "string"
+        },
+        "quotePreface": {
+          "type": "string"
+        },
+        "userNotes": {
+          "type": "string"
+        },
+        "baseCurrency": {
+          "type": "string",
+          "description": "This field is Read Only.", "readOnly": true
+        },
+        "phoneNumber": {
+          "type": "string"
+        },
+        "mobilePhoneNumber": {
+          "type": "string"
+        },
+        "emailAddress": {
+          "type": "string"
+        },
+        "messengerId": {
+          "type": "string"
+        },
+        "invoiceRepId": {
+          "type": "string"
+        },
+        "timeZone": {
+          "type": "string"
+        },
+        "orderPorterEmailAddresses": {
+          "type": "string"
+        },
+        "onBehalfUser": {
+          "type": "string"
+        },
+        "defaultSearchQuoteStatus": {
+          "type": "string"
+        },
+        "bccEmailAddresses": {
+          "type": "string"
+        },
+        "oauthSubscriberId": {
+          "type": "string",
+          "description": "This field is Read Only.", "readOnly": true
+        }
+      }
+    },
+    "JsonPatchDocument[UserView]": {
+      "type": "object",
+      "properties": {
+        "operations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Operation[UserView]"
+          },
+          "description": "This field is Read Only.", "readOnly": true
+        }
+      },
+      "example": [
+        {
+          "value": "New Value",
+          "path": "/property",
+          "op": "replace"
+        },
+        {
+          "value": "New Value",
+          "path": "/property",
+          "op": "add"
+        },
+        {
+          "path": "/property",
+          "op": "remove"
+        }
+      ]
+    },
+    "Operation[UserView]": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "object"
+        },
+        "path": {
+          "type": "string"
+        },
+        "op": {
+          "type": "string"
+        },
+        "from": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "basic": {
+      "type": "basic",
+      "description": "< p > Authentication is similar to Manage, using Basic Authorization. Each request needs to pass an Authorization header that is a Base64 encoded username:password, where username is a combination of AccessKey+SellAPIUsername and password is password. (Full Authorization header would be \"accesskey+username:password\"). Your accesskey can be found by logging into Sell and checking the parameters listed in the URL.</p> <p><blockquote>The user must be an API user.</blockquote></p> <p><b>C# Sample</b></p> <p><code> string auth = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(accessKey + \"+\" + SellAPIUsername + \":\" + sellPassword)); </p><p>client.Headers.Add(\"Authorization:basic \" + auth);</code></p>"
+    }
+  }
+}

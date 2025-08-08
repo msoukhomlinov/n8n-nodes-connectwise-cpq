@@ -1,0 +1,35 @@
+## 0.1.0 — 2025-08-08
+
+- Intial build
+- Supported endpoints and operations:
+  - Quotes
+    - GET `/api/quotes` (list; supports `conditions`, `includeFields`, `showAllVersions`, pagination)
+    - GET `/api/quotes/{id}` (retrieve)
+    - DELETE `/api/quotes/{id}` (delete)
+  - QuoteItems
+    - GET `/api/quoteItems` (list; filters + pagination)
+    - POST `/api/quoteItems` (create)
+    - PATCH `/api/quoteItems/{id}` (update via JSON Patch)
+    - DELETE `/api/quoteItems/{id}` (delete)
+  - QuoteCustomers
+    - GET `/api/quotes/{quoteId}/customers` (list)
+    - PUT `/api/quotes/{quoteId}/customers/{id}` (replace/update)
+    - PATCH `/api/quotes/{quoteId}/customers/{id}` (partial update)
+    - DELETE `/api/quotes/{quoteId}/customers/{id}` (delete)
+  - QuoteTabs
+    - GET `/api/quoteTabs` (list)
+    - GET `/api/quoteTabs/{id}/quoteItems` (list items by tab)
+  - QuoteTerms
+    - GET `/api/quotes/{quoteId}/quoteTerms` (list)
+    - POST `/api/quotes/{quoteId}/quoteTerms` (create)
+    - PATCH `/api/quotes/{quoteId}/quoteTerms/{id}` (update)
+    - DELETE `/api/quotes/{quoteId}/quoteTerms/{id}` (delete)
+  - RecurringRevenues
+    - GET `/api/recurringRevenues` (list)
+  - TaxCodes
+    - GET `/api/taxCodes` (list)
+  - Templates
+    - GET `/api/templates` (list)
+  - User
+    - GET `/settings/user` (list/read)
+    - PATCH `/settings/user/{id}` (update)
