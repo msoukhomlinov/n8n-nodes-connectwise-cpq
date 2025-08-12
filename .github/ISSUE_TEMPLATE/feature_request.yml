@@ -1,5 +1,5 @@
-name: Feature Request
-description: Suggest an idea for this project
+name: Feature request
+description: Suggest an improvement or new capability for the ConnectWise CPQ (Sell) n8n community node
 labels: [enhancement]
 assignees:
   - msoukhomlinov
@@ -7,18 +7,34 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to fill out this feature request!
+        Thanks for your suggestion. Please keep it focused and actionable.
   - type: textarea
     id: feature-description
     attributes:
-      label: Describe the function you would like to have
-      description: A clear and concise description of what you want to happen.
-      placeholder: The description of the function.
+      label: What would you like to add or change?
+      description: Briefly describe the feature or improvement.
+      placeholder: A short description of the desired capability.
     validations:
       required: true
   - type: textarea
     id: alternative-solution
     attributes:
-      label: Describe your current alternative solution.
-      description: Your current solution that you use, if there is one.
-      placeholder: Your alternative solution.
+      label: Current workaround (if any)
+      description: How are you handling this today?
+      placeholder: Describe any temporary workaround.
+  - type: textarea
+    id: use-cases
+    attributes:
+      label: Use cases / examples
+      description: Concrete examples or workflows that would benefit.
+      placeholder: e.g., Sync quote items to ..., filter quotes by ...
+  - type: input
+    id: related-endpoints
+    attributes:
+      label: Related CPQ endpoint(s) (optional)
+      placeholder: e.g., /api/quoteTerms, /api/templates
+  - type: input
+    id: priority
+    attributes:
+      label: Priority (optional)
+      placeholder: Low / Medium / High

@@ -1,5 +1,5 @@
-name: Bug Report
-description: Create a report to help us improve
+name: Bug report
+description: Report a problem with the ConnectWise CPQ (Sell) n8n community node
 labels: [bug]
 assignees:
   - msoukhomlinov
@@ -7,46 +7,61 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to fill out this bug report!
-        Please always be sure to use the latest compatible version.
+        Thanks for reporting a problem. Please use the latest versions and provide clear reproduction steps.
   - type: textarea
     id: bug-description
     attributes:
-      label: Describe the bug
-      description: A clear and concise description of what the bug is.
-      placeholder: The description of the bug.
+      label: What happened?
+      description: Briefly describe the issue.
+      placeholder: A short description of the problem.
+    validations:
+      required: true
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps to reproduce the issue.
+      placeholder: |
+        1. Create a workflow with ...
+        2. Configure node with ...
+        3. Run the workflow
+        4. See error
     validations:
       required: true
   - type: textarea
     id: expected-behavior
     attributes:
-      label: Describe the expected behavior
-      description: A clear and concise description of what you expected to happen.
-      placeholder: The expected behavior.
+      label: What did you expect to happen?
+      description: Describe the expected behaviour.
+      placeholder: Expected result.
     validations:
       required: true
   - type: input
+    id: node-version
     attributes:
-      label: What is your Node.js version?
-      placeholder: 14.X.X
+      label: Node.js version
+      description: n8n v1 requires Node 20+. Confirm the version in your runtime.
+      placeholder: e.g., 20.15.0
     validations:
       required: true
   - type: input
+    id: n8n-version
     attributes:
-      label: What is your n8n version?
-      placeholder: 0.189.0
+      label: n8n version
+      placeholder: e.g., 1.75.1
     validations:
       required: true
   - type: input
+    id: package-version
     attributes:
-      label: What is your n8n-nodes-connectwise-cpq version?
-      placeholder: 0.189.0
+      label: n8n-nodes-connectwise-cpq version
+      placeholder: e.g., 0.1.0
     validations:
       required: true
   - type: dropdown
     id: os
     attributes:
-      label: What operating system are you seeing the problem on?
+      label: Operating system
       multiple: true
       options:
         - Linux
@@ -54,13 +69,24 @@ body:
         - MacOS
         - Other (enter below with the version)
   - type: input
+    id: os-version
     attributes:
-      label: Operating system version (or if other, then please fill in complete name and version)
+      label: Operating system version (or full name if Other)
     validations:
       required: true
+  - type: input
+    id: cpq-endpoints
+    attributes:
+      label: Affected CPQ endpoint(s) (optional)
+      placeholder: e.g., GET /api/quotes, PATCH /api/quoteItems/{id}
   - type: textarea
     id: logs
     attributes:
       label: Relevant log output
-      description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
+      description: Paste relevant logs; they will be formatted automatically.
       render: shell
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context (optional)
+      description: Any extra details, screenshots, or links.
