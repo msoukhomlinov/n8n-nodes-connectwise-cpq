@@ -39,7 +39,7 @@ Optional settings:
 
 - Enable Debug Logging: logs masked request details (method, URL, query, headers) and response status to the console.
 
-## Supported resources and operations (Phase 1)
+## Supported resources and operations
 
 - Quotes: get, getAll, delete, copy
 - QuoteItems: get, getAll, create, update (PATCH), delete
