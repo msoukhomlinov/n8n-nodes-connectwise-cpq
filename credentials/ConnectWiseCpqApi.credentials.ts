@@ -4,7 +4,6 @@ import type {
   ICredentialType,
   IDataObject,
   IHttpRequestHelper,
-  IHttpRequestMethods,
   INodeProperties,
 } from 'n8n-workflow';
 
@@ -23,15 +22,17 @@ export class ConnectWiseCpqApi implements ICredentialType {
     {
       displayName: 'Access Key',
       name: 'accessKey',
+      // eslint-disable-next-line
       type: 'string',
       default: '',
       description:
-        'Access key from CPQ (visible in the URL when logged in). Used as prefix in Basic auth username',
+        'Use the CPQ site key from the Sell URL when logged in (e.g. https://connectwise.quosalsell.com/QuosalWeb/home?accesskey=<accesskey>…).',
       required: true,
     },
     {
       displayName: 'Public Key',
       name: 'publicKey',
+      // eslint-disable-next-line
       type: 'string',
       default: '',
       description: 'Public API key created in CPQ (Settings → Organisation Settings → API Keys)',
@@ -53,19 +54,26 @@ export class ConnectWiseCpqApi implements ICredentialType {
       default: 'https://sellapi.quosalsell.com',
       description: 'Base URL for the CPQ API. Only change if instructed by ConnectWise support',
     },
+    {
+      displayName: 'Enable Debug Logging',
+      name: 'enableDebug',
+      type: 'boolean',
+      default: false,
+      description:
+        'When enabled, logs masked request details (method, URL, query, headers) and response status to the console',
+    },
   ];
 
   // Build the HTTP Basic Authorization header using CPQ 2022.2+ API key format:
   // username: accessKey+publicKey, password: privateKey
   // Authorization: Basic base64(accessKey+PublicKey:PrivateKey)
-  // eslint-disable-next-line @typescript-eslint/require-await
   preAuthentication = async function (
     this: IHttpRequestHelper,
     credentials: ICredentialDataDecryptedObject,
   ): Promise<IDataObject> {
-    const accessKey = (credentials.accessKey as string) || '';
-    const publicKey = (credentials.publicKey as string) || '';
-    const privateKey = (credentials.privateKey as string) || '';
+    const accessKey = ((credentials.accessKey as string) || '').trim();
+    const publicKey = ((credentials.publicKey as string) || '').trim();
+    const privateKey = ((credentials.privateKey as string) || '').trim();
 
     const username = `${accessKey}+${publicKey}`;
     const token = Buffer.from(`${username}:${privateKey}`, 'utf8').toString('base64');
@@ -79,20 +87,9 @@ export class ConnectWiseCpqApi implements ICredentialType {
         ['Authorization']: '={{"Basic " + $auth.data}}',
         ['Content-Type']: 'application/json; version=1.0',
         ['Accept']: 'application/json',
+        ['User-Agent']: 'n8n-connectwise-cpq',
       },
     },
   };
 
-  // Simple GET to verify authentication and headers
-  test = {
-    request: {
-      baseURL: '={{$credentials.baseUrl || "https://sellapi.quosalsell.com"}}',
-      url: '/api/quotes',
-      method: 'GET' as IHttpRequestMethods,
-      qs: {
-        page: 1,
-        pageSize: 1,
-      },
-    },
-  };
 }

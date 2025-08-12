@@ -2,6 +2,7 @@
 
 [![version](https://img.shields.io/npm/v/n8n-nodes-connectwise-cpq.svg)](https://www.npmjs.org/package/n8n-nodes-connectwise-cpq)
 [![downloads](https://img.shields.io/npm/dt/n8n-nodes-connectwise-cpq.svg)](https://www.npmjs.org/package/n8n-nodes-connectwise-cpq)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Support-yellow.svg)](https://buymeacoffee.com/msoukhomlinov)
 
 Community node for ConnectWise CPQ (Sell) REST API, aligned with n8n v1+ node standard.
 
@@ -21,17 +22,22 @@ Community node for ConnectWise CPQ (Sell) REST API, aligned with n8n v1+ node st
 
 Create new credentials: "ConnectWise CPQ (Sell) API" and set:
 
-- Access Key: from CPQ UI URL when logged in
+- Access Key: the CPQ site key from the Sell URL when logged in, e.g. `https://connectwise.quosalsell.com/QuosalWeb/home?accesskey=<accesskey>` (use the `<accesskey>` value). Do not use your email/domain or Manage company ID.
 - Public Key: generated in CPQ (Settings → Organisation Settings → API Keys)
 - Private Key: generated in CPQ (shown once)
 - Base URL: `https://sellapi.quosalsell.com` (default; override only if instructed by ConnectWise)
 
-Authentication header is built as Basic with username `accessKey+publicKey` and password `privateKey`.
+Authentication header is Basic with username `<accesskey>+<publicKey>` and password `<privateKey>`.
 
 Headers automatically set:
 
 - `Content-Type: application/json; version=1.0`
 - `Accept: application/json`
+- `User-Agent: n8n-connectwise-cpq`
+
+Optional settings:
+
+- Enable Debug Logging: logs masked request details (method, URL, query, headers) and response status to the console.
 
 ## Supported resources and operations (Phase 1)
 
@@ -47,10 +53,13 @@ Headers automatically set:
 
 ## Parameters
 
-- Filters: `conditions`, `includeFields`, `showAllVersions` (where supported)
+- Filters: `conditions` (raw) or the Condition Builder UI, `includeFields` (multi-select), `showAllVersions` (where supported)
 - Pagination: `returnAll`, `limit`, `pageSize` (max 1000)
 
-When `returnAll` is true, the node paginates using `page` and `pageSize` until fewer than requested results are returned.
+### Pagination behaviour
+
+- When `Return All` is enabled: the node uses the maximum supported `pageSize` (1000) and paginates until the API returns fewer than requested results.
+- When `Return All` is disabled: the node auto-manages pagination to satisfy `limit`. It will set the effective `pageSize` to `min(limit, 1000)` and fetch across pages until `limit` items are collected. You can still provide a `pageSize` but it will be bounded by the effective calculation.
 
 ## Error handling
 
@@ -59,11 +68,25 @@ When `returnAll` is true, the node paginates using `page` and `pageSize` until f
 
 ## Examples
 
-See `.docs/examples/` for usage guides:
+Example workflows are coming soon under `.docs/examples/`.
 
-- Quotes: list with filters; get by id
-- QuoteItems: create, update (PATCH), delete
-- QuoteCustomers: update (PATCH) and replace (PUT)
+### Condition Builder
+
+You can now construct `conditions` via a visual builder:
+
+- Add rows with: Field, optional Reference Subfield (to become `field/subfield`), Operator (`=`, `!=`, `<`, `<=`, `>`, `>=`, `contains`, `not contains`, `like`, `in`, `not in`), Value Type (String, Integer, Boolean, Datetime, List), and the Value(s).
+- The builder auto-formats values according to the CPQ rules:
+  - Strings are quoted: `name = "Acme"`
+  - Booleans are `True`/`False`: `closedFlag = True`
+  - Datetimes are wrapped in brackets: `lastUpdated = [2024-01-01T00:00:00Z]`
+  - Lists produce parentheses: `status in ("Open","Closed")`
+- Multiple rows are joined with the selected Logic (AND/OR). If you also provide a raw `conditions` string, it will be combined with the builder output using that Logic.
+
+You may still enter a raw `conditions` string for advanced scenarios; the builder is optional and backward compatible.
+
+### Include Fields
+
+The `includeFields` parameter is a resource-aware multi-select. Options are populated dynamically from `/.docs/references/SellAPI.json` for the selected resource. You can also specify field names using an expression.
 
 ## Notes
 

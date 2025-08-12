@@ -1,4 +1,4 @@
-## 0.1.0 — 2025-08-08
+## 0.1.0 — 2025-08-12
 
 - Intial build
 - Supported endpoints and operations:
