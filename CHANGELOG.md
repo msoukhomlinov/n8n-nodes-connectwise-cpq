@@ -1,3 +1,7 @@
+## 0.1.1 — 2025-08-13
+
+- Fixed: Condition Builder field options not loading for get-many operations by wiring the Field selector to the dynamic include-fields loader (resource-aware).
+
 ## 0.1.0 — 2025-08-12
 
 - Intial build

@@ -127,12 +127,16 @@ export class ConnectWiseCpq implements INodeType {
             name: 'conditions',
             displayName: 'Conditions',
             values: [
-											{
-												displayName: 'Field',
+									{
+										displayName: 'Field Name or ID',
 												name: 'field',
 												type: 'options',
+									typeOptions: {
+										loadOptionsMethod: 'getIncludeFields',
+										loadOptionsDependsOn: ['resource'],
+									},
 												default: '',
-												description: 'Field name. You can also use an expression to type a reference path like manufacturer/name.',
+										description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
 											},
 											{
 												displayName: 'Operator',
