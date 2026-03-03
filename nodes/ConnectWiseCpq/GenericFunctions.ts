@@ -5,10 +5,11 @@ import type {
   IHttpRequestMethods,
   IHttpRequestOptions,
   ILoadOptionsFunctions,
+  INode,
   JsonObject,
   GenericValue,
 } from 'n8n-workflow';
-import { NodeApiError } from 'n8n-workflow';
+import { NodeApiError, NodeOperationError } from 'n8n-workflow';
 
 
 export async function cpqApiRequest(
@@ -23,6 +24,8 @@ export async function cpqApiRequest(
   const baseUrl = (credentials.baseUrl as string) || 'https://sellapi.quosalsell.com';
 
   // Build Basic token explicitly per CPQ docs: base64(accessKey+PublicKey:PrivateKey)
+  // NOTE: This auth logic is duplicated in credentials/ConnectWiseCpqApi.credentials.ts (preAuthentication hook).
+  // Both must stay in sync if the scheme ever changes.
   const accessKey = ((credentials.accessKey as string) || '').trim();
   const publicKey = ((credentials.publicKey as string) || '').trim();
   const privateKey = ((credentials.privateKey as string) || '').trim();
@@ -65,7 +68,7 @@ export async function cpqApiRequest(
           url: requestOptions.url,
           qs: requestOptions.qs,
           headers: maskedHeaders,
-          username,
+          username: debugShowAuthToken ? username : `${accessKey}+***`,
           tokenPreview: debugShowAuthToken ? `Basic ${basicToken}` : 'Basic ***',
         });
       }
@@ -201,71 +204,101 @@ export function prepareJsonPatch(
   });
 }
 
-/**
- * Build a ConnectWise-style conditions string from UI inputs, merging with any raw conditions.
- * Rules from docs:
- * - Strings must be quoted with double quotes
- * - Integers as-is
- * - Boolean True/False
- * - Datetimes in square brackets [ISO-8601]
- * - Operators: <, <=, =, !=, >, >=, contains, like, in, not, not contains, not in
- * - Reference: field/reference => field + '/' + subfield
- * - Join with AND/OR
- */
-export function buildConditionsFromUi(
-  rawConditions: string | undefined,
-  ui: { conditions?: Array<{ field?: string; referenceSubfield?: string; operator?: string; valueType?: string; value?: string; values?: string }> } | undefined,
+/** Build a CPQ conditions string from the new `filters` fixedCollection UI. */
+export function buildFiltersFromUi(
+  filters: {
+    conditions?: Array<{
+      field?: string;
+      operator?: string;
+      valueType?: string;
+      value?: string;
+    }>;
+  } | undefined,
   logic: 'and' | 'or' = 'and',
+  rawConditions?: string,
 ): string | undefined {
   const parts: string[] = [];
-  if (ui && Array.isArray(ui.conditions)) {
-    for (const row of ui.conditions) {
+
+  if (filters && Array.isArray(filters.conditions)) {
+    for (const row of filters.conditions) {
       if (!row) continue;
-      const fieldName = (row.field || '').trim();
-      const ref = (row.referenceSubfield || '').trim();
-      if (!fieldName && !ref) continue;
-      const operatorRaw = (row.operator || '=').toLowerCase();
-      // Normalise operators to API text
-      let operator = operatorRaw;
-      if (operatorRaw === 'not contains') operator = 'not contains';
-      if (operatorRaw === 'not in') operator = 'not in';
+      const fieldName = (row.field ?? '').trim();
+      if (!fieldName) continue;
 
-      const valueType = row.valueType || 'string';
-      const valueStr = (row.value ?? '').toString();
-      const valuesStr = (row.values ?? '').toString();
-
-      const left = ref ? `${fieldName}/${ref}` : fieldName;
-      if (!left) continue;
+      const operator = (row.operator ?? '=').toLowerCase();
+      const valueType = row.valueType ?? 'string';
+      const rawValue = (row.value ?? '').trim();
+      const isListOperator = operator === 'in' || operator === 'not in';
 
       let right: string | undefined;
-      if (valueType === 'list') {
-        const list = valuesStr
-          .split(',')
-          .map((s) => s.trim())
-          .filter((s) => s.length > 0)
-          .map((s) => `"${s.replace(/\\"/g, '"')}"`)
-          .join(',');
-        if (list.length > 0) right = `(${list})`;
-      } else if (valueType === 'string') {
-        right = `"${valueStr.replace(/\\"/g, '"')}"`;
-      } else if (valueType === 'integer') {
-        right = `${Number.parseInt(valueStr, 10)}`;
-      } else if (valueType === 'boolean') {
-        const b = /^true$/i.test(valueStr) ? 'True' : /^false$/i.test(valueStr) ? 'False' : valueStr;
-        right = b;
-      } else if (valueType === 'datetime') {
-        right = `[${valueStr}]`;
+      if (isListOperator) {
+        const items = rawValue.split(',').map((s) => s.trim()).filter((s) => s.length > 0);
+        if (items.length === 0) continue;
+        right = `(${items.map((item) => formatSingleValue(item, valueType)).join(',')})`;
+      } else {
+        if (!rawValue) continue;
+        right = formatSingleValue(rawValue, valueType);
       }
 
       if (!right) continue;
-      parts.push(`${left} ${operator} ${right}`);
+      parts.push(`${fieldName} ${operator} ${right}`);
     }
   }
 
   const joined = parts.join(` ${logic.toUpperCase()} `);
-  const trimmedRaw = (rawConditions || '').trim();
+  const trimmedRaw = (rawConditions ?? '').trim();
   if (trimmedRaw && joined) return `${trimmedRaw} ${logic.toUpperCase()} ${joined}`;
   if (trimmedRaw) return trimmedRaw;
   if (joined) return joined;
   return undefined;
+}
+
+function formatSingleValue(value: string, valueType: string): string {
+  switch (valueType) {
+    case 'integer': {
+      const n = Number.parseInt(value, 10);
+      return Number.isNaN(n) ? '' : `${n}`;
+    }
+    case 'boolean':
+      return /^true$/i.test(value) ? 'True' : /^false$/i.test(value) ? 'False' : value;
+    case 'datetime': {
+      // CPQ only supports date-only in brackets, e.g. [2016-08-20].
+      // Strip the time component (T...) so "2026-02-03T01:39:56-05:00" → "[2026-02-03]".
+      const dateOnly = value.match(/^(\d{4}-\d{2}-\d{2})/)?.[1] ?? value;
+      return `[${dateOnly}]`;
+    }
+    case 'string':
+    default:
+      return `"${value.replace(/"/g, '\\"')}"`;
+  }
+}
+
+/**
+ * Cast a string value from the fixedCollection UI to the correct JSON type
+ * for a JSON Patch body, based on the field's Swagger type.
+ *
+ * @throws NodeOperationError when a numeric field cannot be parsed
+ */
+export function castUpdateValue(
+  node: INode,
+  itemIndex: number,
+  value: string,
+  type: string,
+): unknown {
+  switch (type) {
+    case 'boolean':
+      return /^true$/i.test(value);
+    case 'integer': {
+      const n = parseInt(value, 10);
+      if (Number.isNaN(n)) throw new NodeOperationError(node, `Cannot parse "${value}" as integer.`, { itemIndex });
+      return n;
+    }
+    case 'number': {
+      const n = parseFloat(value);
+      if (Number.isNaN(n)) throw new NodeOperationError(node, `Cannot parse "${value}" as number.`, { itemIndex });
+      return n;
+    }
+    default:
+      return value;
+  }
 }
