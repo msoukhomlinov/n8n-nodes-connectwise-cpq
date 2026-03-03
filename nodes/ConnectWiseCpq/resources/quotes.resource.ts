@@ -100,7 +100,7 @@ export const quotesFields: INodeProperties[] = [
     type: 'number',
     required: true,
     default: 0,
-    description: 'The version number of the quote',
+    description: 'The version number of the quote (positive integer)',
     displayOptions: { show: { resource: ['quotes'], operation: ['getVersion', 'deleteVersion'] } },
   },
   {
