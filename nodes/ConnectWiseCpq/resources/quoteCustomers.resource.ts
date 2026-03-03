@@ -17,8 +17,8 @@ export const quoteCustomersOperations: INodeProperties[] = [
     options: [
       { name: 'Delete', value: 'delete', description: 'Delete quote customer', action: 'Delete a quote customer' },
       { name: 'Get Many', value: 'getAll', description: 'List quote customers for a quote', action: 'Get many quote customers' },
-      { name: 'Update', value: 'update', description: 'Update quote customer (PATCH)', action: 'Update a quote customer' },
       { name: 'Replace', value: 'replace', description: 'Replace quote customer (PUT)', action: 'Replace a quote customer' },
+      { name: 'Update', value: 'update', description: 'Update quote customer (PATCH)', action: 'Update a quote customer' },
     ],
     default: 'getAll',
   },

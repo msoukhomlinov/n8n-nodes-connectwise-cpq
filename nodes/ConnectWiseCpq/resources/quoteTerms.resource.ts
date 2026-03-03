@@ -15,9 +15,9 @@ export const quoteTermsOperations: INodeProperties[] = [
     noDataExpression: true,
     displayOptions: { show: { resource: ['quoteTerms'] } },
     options: [
-      { name: 'Get Many', value: 'getAll', description: 'List quote terms', action: 'Get many quote terms' },
       { name: 'Create', value: 'create', description: 'Create quote term', action: 'Create a quote term' },
       { name: 'Delete', value: 'delete', description: 'Delete quote term', action: 'Delete a quote term' },
+      { name: 'Get Many', value: 'getAll', description: 'List quote terms', action: 'Get many quote terms' },
       { name: 'Update', value: 'update', description: 'Update quote term (PATCH)', action: 'Update a quote term' },
     ],
     default: 'getAll',
@@ -58,6 +58,7 @@ export const quoteTermsFields: INodeProperties[] = [
     typeOptions: { rows: 6 },
     default: '',
     required: true,
+    description: 'JSON Patch array, e.g. [{"op":"replace","path":"/fieldName","value":"newValue"}]',
     displayOptions: { show: { resource: ['quoteTerms'], operation: ['update'] } },
   },
 ];
