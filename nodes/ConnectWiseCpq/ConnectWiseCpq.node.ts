@@ -112,6 +112,7 @@ export class ConnectWiseCpq implements INodeType {
         displayName: 'Conditions',
         name: 'conditions',
         type: 'string',
+        displayOptions: { show: { operation: ['getAll'] } },
         default: '',
         description: 'Advanced: Raw conditions string. Examples: summary = "My text", ID = 123, closedFlag = True, lastUpdated = [2024-01-01T00:00:00Z]. Use operators: &lt;, &lt;=, =, !=, &gt;, &gt;=, contains, like, in, not. Join with and/or. Strings must be in quotes; datetimes in [brackets].',
       },
@@ -121,6 +122,7 @@ export class ConnectWiseCpq implements INodeType {
         type: 'fixedCollection',
         placeholder: 'Add Condition',
         typeOptions: { multipleValues: true },
+        displayOptions: { show: { operation: ['getAll'] } },
         default: {},
         options: [
           {
@@ -199,6 +201,7 @@ export class ConnectWiseCpq implements INodeType {
         displayName: 'Logic',
         name: 'conditionsLogic',
         type: 'options',
+        displayOptions: { show: { operation: ['getAll'] } },
         options: [
           { name: 'AND', value: 'and' },
           { name: 'OR', value: 'or' },
@@ -210,6 +213,7 @@ export class ConnectWiseCpq implements INodeType {
         displayName: 'Include Field Names',
         name: 'includeFields',
         type: 'multiOptions',
+        displayOptions: { show: { operation: ['getAll'] } },
         typeOptions: {
           loadOptionsMethod: 'getIncludeFields',
           loadOptionsDependsOn: ['resource'],
@@ -222,6 +226,12 @@ export class ConnectWiseCpq implements INodeType {
         displayName: 'Show All Versions',
         name: 'showAllVersions',
         type: 'boolean',
+        displayOptions: {
+          show: {
+            operation: ['getAll'],
+            resource: ['quotes', 'quoteItems', 'quoteTabs'],
+          },
+        },
         default: false,
         description: 'Whether to show all versions (including deleted or archived) where supported',
       },
@@ -229,6 +239,7 @@ export class ConnectWiseCpq implements INodeType {
         displayName: 'Return All',
         name: 'returnAll',
         type: 'boolean',
+        displayOptions: { show: { operation: ['getAll', 'getItems'] } },
         default: false,
         description: 'Whether to return all results or only up to a given limit',
       },
@@ -241,7 +252,7 @@ export class ConnectWiseCpq implements INodeType {
         },
         description: 'Max number of results to return',
         default: 50,
-        displayOptions: { show: { returnAll: [false] } },
+        displayOptions: { show: { operation: ['getAll', 'getItems'], returnAll: [false] } },
       },
     ],
   };
