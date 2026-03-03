@@ -4,8 +4,44 @@ import type {
   INodeExecutionData,
   INodeProperties,
 } from 'n8n-workflow';
-import { cpqApiRequest, cpqApiRequestAllItems, prepareJsonPatch, buildConditionsFromUi } from '../GenericFunctions';
+import { NodeOperationError } from 'n8n-workflow';
+import { cpqApiRequest, cpqApiRequestAllItems, prepareJsonPatch, buildFiltersFromUi, castUpdateValue } from '../GenericFunctions';
 import { MAX_PAGE_SIZE } from './constants';
+
+const CUSTOMER_FIELD_TYPES: Record<string, string> = {
+  accountName: 'string',
+  accountNumber: 'string',
+  address1: 'string',
+  address2: 'string',
+  city: 'string',
+  companyId: 'string',
+  country: 'string',
+  customCustomerString1: 'string',
+  customCustomerString2: 'string',
+  customCustomerString3: 'string',
+  customerSource: 'string',
+  customerSourceId: 'string',
+  customerType: 'string',
+  dayPhone: 'string',
+  description: 'string',
+  emailAddress: 'string',
+  firstName: 'string',
+  id: 'string',
+  integrationId: 'string',
+  jobTitle: 'string',
+  lastName: 'string',
+  locationId: 'string',
+  mobilePhone: 'string',
+  modifyDate: 'string',
+  postalCode: 'string',
+  priceLevel: 'string',
+  priceLevelName: 'string',
+  relationshipSinceDate: 'string',
+  state: 'string',
+  taxExternalReferenceId: 'string',
+  title: 'string',
+  userId: 'string',
+};
 
 export const quoteCustomersOperations: INodeProperties[] = [
   {
@@ -54,14 +90,71 @@ export const quoteCustomersFields: INodeProperties[] = [
     displayOptions: { show: { resource: ['quoteCustomers'], operation: ['replace'] } },
   },
   {
-    displayName: 'Patch Operations (JSON)',
-    name: 'patchOperations',
-    type: 'string',
-    typeOptions: { rows: 6 },
-    default: '',
+    displayName: 'Fields to Update',
+    name: 'updateFields',
+    type: 'fixedCollection',
+    typeOptions: { multipleValues: true },
+    placeholder: 'Add Field',
+    default: {},
     required: true,
-    description: 'JSON Patch array, e.g. [{"op":"replace","path":"/email","value":"new@domain"}]',
+    description: 'Fields to update on the quote customer. For date fields use ISO format (YYYY-MM-DD).',
     displayOptions: { show: { resource: ['quoteCustomers'], operation: ['update'] } },
+    options: [
+      {
+        name: 'values',
+        displayName: 'Field',
+        values: [
+          {
+            displayName: 'Field',
+            name: 'field',
+            type: 'options',
+            options: [
+              { name: 'Account Name', value: 'accountName' },
+              { name: 'Account Number', value: 'accountNumber' },
+              { name: 'Address1', value: 'address1' },
+              { name: 'Address2', value: 'address2' },
+              { name: 'City', value: 'city' },
+              { name: 'Company ID', value: 'companyId' },
+              { name: 'Country', value: 'country' },
+              { name: 'Custom Customer String1', value: 'customCustomerString1' },
+              { name: 'Custom Customer String2', value: 'customCustomerString2' },
+              { name: 'Custom Customer String3', value: 'customCustomerString3' },
+              { name: 'Customer Source', value: 'customerSource' },
+              { name: 'Customer Source ID', value: 'customerSourceId' },
+              { name: 'Customer Type', value: 'customerType' },
+              { name: 'Day Phone', value: 'dayPhone' },
+              { name: 'Description', value: 'description' },
+              { name: 'Email Address', value: 'emailAddress' },
+              { name: 'First Name', value: 'firstName' },
+              { name: 'ID', value: 'id' },
+              { name: 'Integration ID', value: 'integrationId' },
+              { name: 'Job Title', value: 'jobTitle' },
+              { name: 'Last Name', value: 'lastName' },
+              { name: 'Location ID', value: 'locationId' },
+              { name: 'Mobile Phone', value: 'mobilePhone' },
+              { name: 'Modify Date', value: 'modifyDate' },
+              { name: 'Postal Code', value: 'postalCode' },
+              { name: 'Price Level', value: 'priceLevel' },
+              { name: 'Price Level Name', value: 'priceLevelName' },
+              { name: 'Relationship Since Date', value: 'relationshipSinceDate' },
+              { name: 'State', value: 'state' },
+              { name: 'Tax External Reference ID', value: 'taxExternalReferenceId' },
+              { name: 'Title', value: 'title' },
+              { name: 'User ID', value: 'userId' },
+            ],
+            default: 'firstName',
+            description: 'The quote customer field to update',
+          },
+          {
+            displayName: 'Value',
+            name: 'value',
+            type: 'string',
+            default: '',
+            description: 'The new value for the field',
+          },
+        ],
+      },
+    ],
   },
 ];
 
@@ -77,12 +170,12 @@ export async function executeQuoteCustomers(
     const returnAll = this.getNodeParameter('returnAll', i, false) as boolean;
     const pageSize = this.getNodeParameter('pageSize', i, 50) as number;
     const limit = this.getNodeParameter('limit', i, 100) as number;
-    const rawConditions = this.getNodeParameter('conditions', i, '') as string;
-    const conditionsUi = this.getNodeParameter('conditionsUi', i, {}) as {
-      conditions?: Array<{ field?: string; referenceSubfield?: string; operator?: string; valueType?: string; value?: string; values?: string }>;
+    const filters = this.getNodeParameter('filters', i, {}) as {
+      conditions?: Array<{ field?: string; operator?: string; valueType?: string; value?: string }>;
     };
-    const conditionsLogic = this.getNodeParameter('conditionsLogic', i, 'and') as 'and' | 'or';
-    const conditions = buildConditionsFromUi(rawConditions, conditionsUi, conditionsLogic);
+    const filterLogic = this.getNodeParameter('filterLogic', i, 'and') as 'and' | 'or';
+    const additionalOptions = this.getNodeParameter('additionalOptions', i, {}) as { rawConditions?: string };
+    const conditions = buildFiltersFromUi(filters, filterLogic, additionalOptions.rawConditions);
     const includeFieldsRaw = this.getNodeParameter('includeFields', i, '') as string | string[];
     const includeFields = Array.isArray(includeFieldsRaw) ? includeFieldsRaw.join(',') : includeFieldsRaw;
 
@@ -130,16 +223,21 @@ export async function executeQuoteCustomers(
   if (operation === 'update') {
     const quoteId = this.getNodeParameter('quoteId', i) as string;
     const id = this.getNodeParameter('id', i) as string;
-    const patchOperations = this.getNodeParameter('patchOperations', i) as string;
-    const opsRaw = (patchOperations ? JSON.parse(patchOperations) : []) as {
-      op: string;
-      path: string;
-      value?: unknown;
-      from?: string;
-    }[];
-    const patchBody = prepareJsonPatch(opsRaw);
+    const updateFields = this.getNodeParameter('updateFields', i, {}) as {
+      values?: Array<{ field: string; value: string }>;
+    };
+    const rows = updateFields.values ?? [];
+    if (rows.length === 0) {
+      throw new NodeOperationError(this.getNode(), 'Add at least one field to update.', { itemIndex: i });
+    }
+    const ops = rows.map(({ field, value }) => ({
+      op: 'replace' as const,
+      path: `/${field}`,
+      value: castUpdateValue(this.getNode(), i, value, CUSTOMER_FIELD_TYPES[field] ?? 'string'),
+    }));
+    const patchBody = prepareJsonPatch(ops);
     const res = (await cpqApiRequest.call(this, 'PATCH', `/api/quotes/${encodeURIComponent(quoteId)}/customers/${encodeURIComponent(id)}`, patchBody)) as IDataObject;
-    returnData.push({ json: res as IDataObject });
+    returnData.push({ json: res });
   }
 
   if (operation === 'replace') {
@@ -151,5 +249,3 @@ export async function executeQuoteCustomers(
     returnData.push({ json: res as IDataObject });
   }
 }
-
-
