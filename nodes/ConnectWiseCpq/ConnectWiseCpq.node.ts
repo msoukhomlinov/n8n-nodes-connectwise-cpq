@@ -54,7 +54,7 @@ export class ConnectWiseCpq implements INodeType {
     icon: 'file:connectwisecpq.svg',
     group: ['transform'],
     version: 1,
-    subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
+    subtitle: '={{$parameter["resource"] + ": " + $parameter["operation"]}}',
     description: 'Interact with ConnectWise CPQ (Sell) API',
     defaults: {
       name: 'ConnectWise CPQ',
