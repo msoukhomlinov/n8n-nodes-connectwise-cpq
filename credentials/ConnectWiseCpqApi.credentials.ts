@@ -62,11 +62,21 @@ export class ConnectWiseCpqApi implements ICredentialType {
       description:
         'When enabled, logs masked request details (method, URL, query, headers) and response status to the console',
     },
+    {
+      displayName: 'Show Auth Token in Debug Logs',
+      name: 'debugShowAuthToken',
+      type: 'boolean',
+      default: false,
+      description: 'When enabled alongside debug logging, includes the full Authorization token in console output. Only enable temporarily for troubleshooting.',
+      displayOptions: { show: { enableDebug: [true] } },
+    },
   ];
 
   // Build the HTTP Basic Authorization header using CPQ 2022.2+ API key format:
   // username: accessKey+publicKey, password: privateKey
   // Authorization: Basic base64(accessKey+PublicKey:PrivateKey)
+  // NOTE: This auth logic is duplicated in GenericFunctions.ts (cpqApiRequest).
+  // Both must stay in sync if the scheme ever changes.
   preAuthentication = async function (
     this: IHttpRequestHelper,
     credentials: ICredentialDataDecryptedObject,
