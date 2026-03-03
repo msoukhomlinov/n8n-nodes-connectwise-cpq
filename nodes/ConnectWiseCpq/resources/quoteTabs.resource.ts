@@ -87,18 +87,37 @@ export async function executeQuoteTabs(
 
   if (operation === 'getItems') {
     const id = this.getNodeParameter('id', i) as string;
-    const all = (await cpqApiRequestAllItems.call(
-      this,
-      '',
-      'GET',
-      `/api/quoteTabs/${encodeURIComponent(id)}/quoteItems`,
-      {},
-      {},
-      {},
-      undefined,
-      MAX_PAGE_SIZE,
-    )) as unknown[];
-    for (const entry of all as IDataObject[]) returnData.push({ json: entry });
+    const returnAll = this.getNodeParameter('returnAll', i, false) as boolean;
+    const limit = this.getNodeParameter('limit', i, 50) as number;
+
+    if (returnAll) {
+      const all = (await cpqApiRequestAllItems.call(
+        this,
+        '',
+        'GET',
+        `/api/quoteTabs/${encodeURIComponent(id)}/quoteItems`,
+        {},
+        {},
+        {},
+        undefined,
+        MAX_PAGE_SIZE,
+      )) as unknown[];
+      for (const entry of all as IDataObject[]) returnData.push({ json: entry });
+    } else {
+      const effectivePageSize = Math.min(limit, MAX_PAGE_SIZE);
+      const some = (await cpqApiRequestAllItems.call(
+        this,
+        '',
+        'GET',
+        `/api/quoteTabs/${encodeURIComponent(id)}/quoteItems`,
+        {},
+        {},
+        {},
+        limit,
+        effectivePageSize,
+      )) as unknown[];
+      for (const entry of some as IDataObject[]) returnData.push({ json: entry });
+    }
   }
 }
 
