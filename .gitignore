@@ -8,3 +8,11 @@ yarn.lock
 .vscode/launch.json
 pnpm-lock.yaml
 .cursorrules
+# AI / Cursor / docs configs (managed by private repo)
+/.claude
+/.cursor*
+/docs
+/CLAUDE.md
+/AGENT.md
+/.agent*
+/.private-git
