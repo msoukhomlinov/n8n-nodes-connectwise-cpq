@@ -286,15 +286,22 @@ export function castUpdateValue(
   type: string,
 ): unknown {
   switch (type) {
-    case 'boolean':
-      return /^true$/i.test(value);
+    case 'boolean': {
+      if (/^true$/i.test(value)) return true;
+      if (/^false$/i.test(value)) return false;
+      throw new NodeOperationError(
+        node,
+        `Cannot parse "${value}" as boolean. Expected "true" or "false".`,
+        { itemIndex },
+      );
+    }
     case 'integer': {
-      const n = parseInt(value, 10);
+      const n = Number.parseInt(value, 10);
       if (Number.isNaN(n)) throw new NodeOperationError(node, `Cannot parse "${value}" as integer.`, { itemIndex });
       return n;
     }
     case 'number': {
-      const n = parseFloat(value);
+      const n = Number.parseFloat(value);
       if (Number.isNaN(n)) throw new NodeOperationError(node, `Cannot parse "${value}" as number.`, { itemIndex });
       return n;
     }
