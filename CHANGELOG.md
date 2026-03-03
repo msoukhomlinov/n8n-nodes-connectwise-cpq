@@ -1,10 +1,3 @@
-## [Unreleased]
-
-### Changed
-- **All patch resources (quotes, quoteItems, quoteTerms, quoteCustomers, user):** Replaced the raw "Patch Operations (JSON)" text field with a user-friendly "Fields to Update" collection. Users now select a field from a searchable dropdown and enter a value — the node builds the JSON Patch array automatically. Boolean values: use `true`/`false`. Number values: use digits only. Date values: use ISO format (`YYYY-MM-DD`).
-
----
-
 ## 0.2.0 — 2026-03-03
 
 ### Breaking Changes
@@ -18,10 +11,21 @@
 - `in` / `not in` operators now split the single `value` field on commas instead of requiring a separate `values` field.
 - `valueType: 'list'` option removed; list formatting is now triggered automatically by the `in`/`not in` operator choice.
 - Reference subfield filtering: type `field/subfield` directly in the Field input (no separate `referenceSubfield` field).
+- **Patch UX redesign** — The raw "Patch Operations (JSON)" text field has been replaced with a user-friendly "Fields to Update" collection on all patch resources (quotes, quoteItems, quoteTerms, quoteCustomers, user). Existing workflows that passed raw JSON patch arrays **must be reconfigured**.
+
+### Changed
+
+- **All patch resources:** Users now select a field from a searchable dropdown and enter a value; the node builds the JSON Patch array automatically. Boolean values: `true`/`false`. Number values: digits only. Date values: ISO format (`YYYY-MM-DD`).
+
+### Fixed
+
+- **Update field validation** — Integer and number inputs now reject partial numeric strings (e.g. `"42abc"`) with a clear error instead of silently truncating to `42`.
+- **Update field safety** — Removed `id` (primary key) from the "Fields to Update" dropdown on all patch resources to prevent accidental record corruption. Relation IDs (`idQuote`, `idQuoteTabs`, etc.) are still available.
 
 ### Internal
 
 - `buildConditionsFromUi` in `GenericFunctions.ts` replaced by `buildFiltersFromUi` with simplified signature: `(filters, logic, rawConditions)`.
+- Added `castUpdateValue` to `GenericFunctions.ts`: casts string UI inputs to the correct JSON type for patch bodies, with regex-validated integer/number parsing.
 
 ---
 
