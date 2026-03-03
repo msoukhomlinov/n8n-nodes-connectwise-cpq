@@ -31,6 +31,7 @@ export const quoteTermsFields: INodeProperties[] = [
     type: 'string',
     required: true,
     default: '',
+    description: 'The ID of the quote',
     displayOptions: { show: { resource: ['quoteTerms'], operation: ['getAll', 'create', 'delete', 'update'] } },
   },
   {

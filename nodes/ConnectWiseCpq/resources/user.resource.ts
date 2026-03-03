@@ -33,6 +33,7 @@ export const userFields: INodeProperties[] = [
     typeOptions: { rows: 6 },
     default: '',
     required: true,
+    description: 'JSON Patch array, e.g. [{"op":"replace","path":"/fieldName","value":"newValue"}]',
     displayOptions: { show: { resource: ['user'], operation: ['update'] } },
   },
 ];
