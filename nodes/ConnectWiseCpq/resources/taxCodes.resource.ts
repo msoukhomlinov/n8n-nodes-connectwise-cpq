@@ -1,5 +1,5 @@
 import type { IDataObject, IExecuteFunctions, INodeExecutionData, INodeProperties } from 'n8n-workflow';
-import { cpqApiRequestAllItems, buildConditionsFromUi } from '../GenericFunctions';
+import { cpqApiRequestAllItems, buildFiltersFromUi } from '../GenericFunctions';
 import { MAX_PAGE_SIZE } from './constants';
 
 export const taxCodesOperations: INodeProperties[] = [
@@ -27,12 +27,12 @@ export async function executeTaxCodes(
     const returnAll = this.getNodeParameter('returnAll', i, false) as boolean;
     const pageSize = this.getNodeParameter('pageSize', i, 50) as number;
     const limit = this.getNodeParameter('limit', i, 100) as number;
-    const rawConditions = this.getNodeParameter('conditions', i, '') as string;
-    const conditionsUi = this.getNodeParameter('conditionsUi', i, {}) as {
-      conditions?: Array<{ field?: string; referenceSubfield?: string; operator?: string; valueType?: string; value?: string; values?: string }>;
+    const filters = this.getNodeParameter('filters', i, {}) as {
+      conditions?: Array<{ field?: string; operator?: string; valueType?: string; value?: string }>;
     };
-    const conditionsLogic = this.getNodeParameter('conditionsLogic', i, 'and') as 'and' | 'or';
-    const conditions = buildConditionsFromUi(rawConditions, conditionsUi, conditionsLogic);
+    const filterLogic = this.getNodeParameter('filterLogic', i, 'and') as 'and' | 'or';
+    const additionalOptions = this.getNodeParameter('additionalOptions', i, {}) as { rawConditions?: string };
+    const conditions = buildFiltersFromUi(filters, filterLogic, additionalOptions.rawConditions);
     const includeFieldsRaw = this.getNodeParameter('includeFields', i, '') as string | string[];
     const includeFields = Array.isArray(includeFieldsRaw) ? includeFieldsRaw.join(',') : includeFieldsRaw;
 
