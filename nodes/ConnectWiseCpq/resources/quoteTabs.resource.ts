@@ -1,5 +1,5 @@
 import type { IDataObject, IExecuteFunctions, INodeExecutionData, INodeProperties } from 'n8n-workflow';
-import { cpqApiRequest, cpqApiRequestAllItems, buildConditionsFromUi } from '../GenericFunctions';
+import { cpqApiRequestAllItems, buildConditionsFromUi } from '../GenericFunctions';
 import { MAX_PAGE_SIZE } from './constants';
 
 export const quoteTabsOperations: INodeProperties[] = [
@@ -48,12 +48,12 @@ export async function executeQuoteTabs(
     const conditions = buildConditionsFromUi(rawConditions, conditionsUi, conditionsLogic);
     const includeFieldsRaw = this.getNodeParameter('includeFields', i, '') as string | string[];
     const includeFields = Array.isArray(includeFieldsRaw) ? includeFieldsRaw.join(',') : includeFieldsRaw;
-    const showAllVersions = this.getNodeParameter('showAllVersions', i, true) as boolean;
+    const showAllVersions = this.getNodeParameter('showAllVersions', i, false) as boolean;
 
     const qs: IDataObject = {};
     if (conditions) qs.conditions = conditions;
     if (includeFields) qs.includeFields = includeFields;
-    if (typeof showAllVersions === 'boolean') qs.showAllVersions = showAllVersions;
+    if (showAllVersions) qs.showAllVersions = showAllVersions;
 
     if (returnAll) {
       const all = (await cpqApiRequestAllItems.call(
@@ -87,9 +87,18 @@ export async function executeQuoteTabs(
 
   if (operation === 'getItems') {
     const id = this.getNodeParameter('id', i) as string;
-    const res = await cpqApiRequest.call(this, 'GET', `/api/quoteTabs/${encodeURIComponent(id)}/quoteItems`);
-    const arr = Array.isArray(res) ? res : [res];
-    for (const entry of arr) returnData.push({ json: entry });
+    const all = (await cpqApiRequestAllItems.call(
+      this,
+      '',
+      'GET',
+      `/api/quoteTabs/${encodeURIComponent(id)}/quoteItems`,
+      {},
+      {},
+      {},
+      undefined,
+      MAX_PAGE_SIZE,
+    )) as unknown[];
+    for (const entry of all as IDataObject[]) returnData.push({ json: entry });
   }
 }
 

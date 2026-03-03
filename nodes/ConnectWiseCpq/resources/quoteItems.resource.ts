@@ -81,7 +81,7 @@ export async function executeQuoteItems(
     const qs: IDataObject = {};
     if (conditions) qs.conditions = conditions;
     if (includeFields) qs.includeFields = includeFields;
-    if (typeof showAllVersions === 'boolean') qs.showAllVersions = showAllVersions;
+    if (showAllVersions) qs.showAllVersions = showAllVersions;
 
     if (returnAll) {
       const all = (await cpqApiRequestAllItems.call(
