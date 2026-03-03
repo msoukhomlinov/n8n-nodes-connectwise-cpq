@@ -243,16 +243,6 @@ export class ConnectWiseCpq implements INodeType {
         default: 50,
         displayOptions: { show: { returnAll: [false] } },
       },
-      {
-        displayName: 'Page Size',
-        name: 'pageSize',
-        type: 'number',
-        typeOptions: { minValue: 1, maxValue: 1000 },
-        default: 50,
-        description:
-          'Optional. Auto-managed based on Limit when Return All is off, or set to maximum when Return All is on.',
-        displayOptions: { show: { returnAll: [false] } },
-      },
     ],
   };
 
@@ -268,6 +258,7 @@ export class ConnectWiseCpq implements INodeType {
           quoteTerms: 'QuoteTermView',
           recurringRevenue: 'RecurringRevenueView',
           taxCodes: 'TaxCodeView',
+          // Templates share the QuoteView schema — the SellAPI spec has no TemplatesView definition
           templates: 'QuoteView',
           user: 'UserView',
         };
