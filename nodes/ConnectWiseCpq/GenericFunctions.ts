@@ -296,14 +296,16 @@ export function castUpdateValue(
       );
     }
     case 'integer': {
-      const n = Number.parseInt(value, 10);
-      if (Number.isNaN(n)) throw new NodeOperationError(node, `Cannot parse "${value}" as integer.`, { itemIndex });
-      return n;
+      if (!/^-?\d+$/.test(value.trim())) {
+        throw new NodeOperationError(node, `Cannot parse "${value}" as integer.`, { itemIndex });
+      }
+      return Number.parseInt(value.trim(), 10);
     }
     case 'number': {
-      const n = Number.parseFloat(value);
-      if (Number.isNaN(n)) throw new NodeOperationError(node, `Cannot parse "${value}" as number.`, { itemIndex });
-      return n;
+      if (!/^-?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(value.trim())) {
+        throw new NodeOperationError(node, `Cannot parse "${value}" as number.`, { itemIndex });
+      }
+      return Number.parseFloat(value.trim());
     }
     default:
       return value;
