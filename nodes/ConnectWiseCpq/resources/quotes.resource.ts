@@ -119,7 +119,6 @@ export const QUOTE_FIELD_TYPES: Record<string, string> = {
   quoteNotes: 'string',
   quoteNumber: 'integer',
   quotePreface: 'string',
-  quoteStatus: 'string',
   quoteTotal: 'number',
   quoteType: 'string',
   quoteVersion: 'integer',
@@ -161,6 +160,7 @@ export const QUOTE_FIELD_TYPES: Record<string, string> = {
   versionComment: 'string',
   winForm: 'string',
   wonOrLostDate: 'string',
+  quoteStatus: 'string',
   zCustomQuoteBool1: 'boolean',
   zCustomQuoteBool10: 'boolean',
   zCustomQuoteBool2: 'boolean',
@@ -210,55 +210,13 @@ export const QUOTE_FIELD_TYPES: Record<string, string> = {
   zCustomQuoteString9: 'string',
 };
 
-// ── Synthetic status helpers ──────────────────────────────────────────────
-
-/** Precedence-ordered status label for a quote object. Always computed from raw fields. */
-export function computeSyntheticStatus(q: IDataObject): string {
-  if (q.isArchive === true) return 'Archived';
-  if (q.isLost === true) return 'Lost';
-  if (q.invoicePostStatus === 'Posted') return 'Invoiced';
-  if (q.isAccepted === true) return 'Accepted / Won';
-  if (q.isManagerApproved === true && q.isAccepted === false) return 'Manager Approved';
-  if (q.approvalStatus !== undefined && q.approvalStatus !== 'None' && q.isManagerApproved === false)
-    return 'Pending Approval';
-  if (q.isSent === true) return 'Sent';
-  return 'Draft';
-}
-
-const STATUS_CONDITIONS: Record<string, string> = {
-  archived:         'isArchive = True',
-  lost:             'isLost = True',
-  invoiced:         'invoicePostStatus = "Posted"',
-  acceptedWon:      'isAccepted = True AND isArchive = False AND isLost = False AND invoicePostStatus != "Posted"',
-  managerApproved:  'isManagerApproved = True AND isAccepted = False AND isLost = False AND isArchive = False',
-  pendingApproval:  'approvalStatus != "None" AND isManagerApproved = False AND isAccepted = False AND isLost = False AND isArchive = False',
-  sent:             'isSent = True AND isAccepted = False AND isLost = False AND isArchive = False AND invoicePostStatus != "Posted"',
-  draft:            'isArchive = False AND isLost = False AND invoicePostStatus != "Posted" AND isAccepted = False AND isManagerApproved = False AND approvalStatus = "None" AND isSent = False',
-};
-
-const QUICK_FILTER_CONDITIONS: Record<string, () => string> = {
-  workingOnly:    () => 'isRequestTemplate = False AND isRequestQuote = False',
-  activePipeline: () => 'isLost = False AND isArchive = False AND isAccepted = False AND invoicePostStatus != "Posted"',
-  expiryRisk:     () => {
-    const today = new Date().toISOString().split('T')[0];
-    return `expirationDate < [${today}] AND isAccepted = False AND isLost = False AND isArchive = False`;
-  },
-};
-
 /**
- * Builds the extra CPQ conditions string from the synthetic status filter and quick filters.
- * Returns empty string if neither is active (caller should skip adding to qs).
+ * Returns true for the legacy UUID-format quote ID (e.g. 2710b955-04f8-47ed-9e26-ea57ed41519c).
+ * These quotes cannot be modified via the REST API — the server throws 500 on any PATCH/DELETE.
+ * Newer quotes use an alphanumeric format (e.g. q639088936162812241alWXeGX) and work correctly.
  */
-export function buildExtraConditions(statusFilter: string, quickFilters: string[]): string {
-  const parts: string[] = [];
-  if (statusFilter && statusFilter !== 'all' && STATUS_CONDITIONS[statusFilter]) {
-    parts.push(STATUS_CONDITIONS[statusFilter]);
-  }
-  for (const qf of quickFilters) {
-    const fn = QUICK_FILTER_CONDITIONS[qf];
-    if (fn) parts.push(fn());
-  }
-  return parts.join(' AND ');
+export function isLegacyQuoteId(id: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id.trim());
 }
 
 /**
@@ -294,20 +252,20 @@ export const quotesOperations: INodeProperties[] = [
       {
         name: 'Delete Version',
         value: 'deleteVersion',
-        description: 'Delete a specific version of a quote by quote number and version',
+        description: 'Delete a specific version of a quote by user-visible quote number and version number',
         action: 'Delete a quote version',
       },
       {
         name: 'Get',
         value: 'get',
-        description: 'Get a quote by ID',
+        description: 'Get a quote by internal system ID (the id field, not the user-visible quote number)',
         action: 'Get a quote',
       },
       {
-        name: 'Get Latest Version',
+        name: 'Get by Quote Number',
         value: 'getLatestVersion',
-        description: 'Get the latest version of a quote by quote number',
-        action: 'Get latest quote version',
+        description: 'Get a quote by user-visible quote number (quoteNumber field, not the internal system id)',
+        action: 'Get a quote by quote number',
       },
       {
         name: 'Get Many',
@@ -318,14 +276,32 @@ export const quotesOperations: INodeProperties[] = [
       {
         name: 'Get Version',
         value: 'getVersion',
-        description: 'Get a specific version of a quote by quote number and version',
+        description: 'Get a specific version of a quote by user-visible quote number and version number',
         action: 'Get a quote version',
       },
       {
         name: 'Get Versions',
         value: 'getVersions',
-        description: 'Get all versions of a quote by quote number',
+        description: 'Get all versions of a quote by user-visible quote number',
         action: 'Get all quote versions',
+      },
+      {
+        name: 'Close as Lost',
+        value: 'closeAsLost',
+        description: 'Mark a quote as Lost. Sets quoteStatus and wonOrLostDate in one operation.',
+        action: 'Close a quote as lost',
+      },
+      {
+        name: 'Close as No Decision',
+        value: 'closeAsNoDecision',
+        description: 'Mark a quote as No Decision. Sets quoteStatus and wonOrLostDate in one operation.',
+        action: 'Close a quote as no decision',
+      },
+      {
+        name: 'Close as Won',
+        value: 'closeAsWon',
+        description: 'Mark a quote as Won. Sets quoteStatus and wonOrLostDate in one operation.',
+        action: 'Close a quote as won',
       },
       {
         name: 'Update',
@@ -341,47 +317,42 @@ export const quotesOperations: INodeProperties[] = [
 export const quotesFields: INodeProperties[] = [
   {
     displayName: 'Quote Status',
-    name: 'quoteStatusFilter',
+    name: 'quoteStatus',
     type: 'options',
     displayOptions: { show: { resource: ['quotes'], operation: ['getAll'] } },
     options: [
-      { name: 'Accepted / Won',    value: 'acceptedWon' },
-      { name: 'All',               value: 'all' },
-      { name: 'Archived',          value: 'archived' },
-      { name: 'Draft',             value: 'draft' },
-      { name: 'Invoiced',          value: 'invoiced' },
-      { name: 'Lost',              value: 'lost' },
-      { name: 'Manager Approved',  value: 'managerApproved' },
-      { name: 'Pending Approval',  value: 'pendingApproval' },
-      { name: 'Sent',              value: 'sent' },
+      { name: 'Active',               value: 'active' },
+      { name: 'All',                  value: 'all' },
+      { name: 'All Closed',           value: 'allClosed' },
+      { name: 'Archived',             value: 'archived' },
+      { name: 'Closed - Lost',        value: 'lost' },
+      { name: 'Closed - No Decision', value: 'noDecision' },
+      { name: 'Closed - Won',         value: 'won' },
+      { name: 'Deleted',              value: 'deleted' },
     ],
     default: 'all',
-    description: 'Filter quotes to a single lifecycle status. Compiled server-side as CPQ conditions. "syntheticStatus" is always added to output items regardless of this setting.',
+    description: 'Filter by quote status. "Active" means open/in-play. Closed options filter by a specific outcome. "All Closed" matches any non-Active status.',
   },
   {
-    displayName: 'Quick Filters',
-    name: 'quickFilters',
-    type: 'multiOptions',
+    displayName: 'Expired Only',
+    name: 'expiredOnly',
+    type: 'boolean',
+    displayOptions: { show: { resource: ['quotes'], operation: ['getAll'] } },
+    default: false,
+    description: 'Whether to return only quotes whose expiration date is in the past. Most useful combined with Quote Status = Active.',
+  },
+  {
+    displayName: 'ID Format',
+    name: 'idFormat',
+    type: 'options',
     displayOptions: { show: { resource: ['quotes'], operation: ['getAll'] } },
     options: [
-      {
-        name: 'Working Quotes Only',
-        value: 'workingOnly',
-        description: 'Excludes request templates and request quotes (isRequestTemplate = false AND isRequestQuote = false)',
-      },
-      {
-        name: 'Active Pipeline Only',
-        value: 'activePipeline',
-        description: 'Excludes lost, archived, accepted, and invoiced quotes',
-      },
-      {
-        name: 'Expiry Risk',
-        value: 'expiryRisk',
-        description: 'Only quotes past their expiration date that are still open (not accepted, lost, or archived)',
-      },
+      { name: 'All', value: 'all' },
+      { name: 'New Format Only (API-writable)', value: 'newOnly' },
+      { name: 'Legacy Format Only (read-only via API)', value: 'legacyOnly' },
     ],
-    default: ['workingOnly'],
-    description: 'Pre-built filters compiled server-side as CPQ conditions. Can be combined. "Working Quotes Only" is on by default.',
+    default: 'all',
+    description: 'Filter results by quote ID format. Legacy quotes (UUID format) cannot be modified via the API — use "New Format Only" to return only quotes that support update/close/delete operations.',
   },
   {
     displayName: 'Quote ID',
@@ -389,8 +360,32 @@ export const quotesFields: INodeProperties[] = [
     type: 'string',
     required: true,
     default: '',
-    description: 'The ID of the quote',
-    displayOptions: { show: { resource: ['quotes'], operation: ['get', 'delete', 'copy', 'update'] } },
+    description: 'The internal system ID of the quote (id field from API results, not the user-visible quote number)',
+    displayOptions: { show: { resource: ['quotes'], operation: ['get', 'delete', 'copy', 'update', 'closeAsLost', 'closeAsNoDecision', 'closeAsWon'] } },
+  },
+  {
+    displayName: 'Lost/No-Decision Reason',
+    name: 'lostReason',
+    type: 'string',
+    default: '',
+    description: 'Optional reason the quote was lost or resulted in no decision',
+    displayOptions: { show: { resource: ['quotes'], operation: ['closeAsLost', 'closeAsNoDecision'] } },
+  },
+  {
+    displayName: 'Won Reason',
+    name: 'winForm',
+    type: 'string',
+    default: '',
+    description: 'Optional reason the quote was won',
+    displayOptions: { show: { resource: ['quotes'], operation: ['closeAsWon'] } },
+  },
+  {
+    displayName: 'Won/Lost Date',
+    name: 'wonOrLostDate',
+    type: 'dateTime',
+    default: '',
+    description: 'Date/time the quote was closed. Defaults to now if left blank.',
+    displayOptions: { show: { resource: ['quotes'], operation: ['closeAsLost', 'closeAsNoDecision', 'closeAsWon'] } },
   },
   {
     displayName: 'Quote Number',
@@ -398,7 +393,7 @@ export const quotesFields: INodeProperties[] = [
     type: 'number',
     required: true,
     default: 0,
-    description: 'The quote number (integer, not the quote ID)',
+    description: 'The user-visible quote number (quoteNumber integer users see in CPQ, not the internal system id)',
     displayOptions: { show: { resource: ['quotes'], operation: ['getVersions', 'getLatestVersion', 'getVersion', 'deleteVersion'] } },
   },
   {
@@ -418,7 +413,7 @@ export const quotesFields: INodeProperties[] = [
     placeholder: 'Add Field',
     default: {},
     required: true,
-    description: 'Fields to update on the quote. For boolean fields use "true" or "false". For date fields use ISO format (YYYY-MM-DD).',
+    description: 'Fields to update on the quote. For boolean fields use "true" or "false". For date fields use ISO format (YYYY-MM-DD). To close as lost: set Quote Status = "Lost" (preferred), or set Is Lost = true AND Won Or Lost Date together — setting Is Lost alone returns a 500 error.',
     displayOptions: { show: { resource: ['quotes'], operation: ['update'] } },
     options: [
       {
@@ -475,7 +470,7 @@ export const quotesFields: INodeProperties[] = [
               { name: 'Invoice Post User', value: 'invoicePostUser' },
               { name: 'Is Accepted', value: 'isAccepted' },
               { name: 'Is Archive', value: 'isArchive' },
-              { name: 'Is Lost', value: 'isLost' },
+              { name: 'Is Lost (also set Won Or Lost Date)', value: 'isLost' },
               { name: 'Is Manager Approved', value: 'isManagerApproved' },
               { name: 'Is Order Porter Approved', value: 'isOrderPorterApproved' },
               { name: 'Is Quote Demand', value: 'isQuoteDemand' },
@@ -540,8 +535,8 @@ export const quotesFields: INodeProperties[] = [
               { name: 'Quote Notes', value: 'quoteNotes' },
               { name: 'Quote Number', value: 'quoteNumber' },
               { name: 'Quote Preface', value: 'quotePreface' },
-              { name: 'Quote Status', value: 'quoteStatus' },
               { name: 'Quote Total', value: 'quoteTotal' },
+              { name: 'Quote Status', value: 'quoteStatus' },
               { name: 'Quote Type', value: 'quoteType' },
               { name: 'Quote Version', value: 'quoteVersion' },
               { name: 'Recurring Cost', value: 'recurringCost' },
@@ -666,11 +661,37 @@ export async function executeQuotes(
     const includeFieldsRaw = this.getNodeParameter('includeFields', i, '') as string | string[];
     const includeFields = Array.isArray(includeFieldsRaw) ? includeFieldsRaw.join(',') : includeFieldsRaw;
     const showAllVersions = this.getNodeParameter('showAllVersions', i, false) as boolean;
-    const quoteStatusFilter = this.getNodeParameter('quoteStatusFilter', i, 'all') as string;
-    const quickFilters = this.getNodeParameter('quickFilters', i, ['workingOnly']) as string[];
+    const quoteStatus = this.getNodeParameter('quoteStatus', i, 'all') as string;
+    const expiredOnly = this.getNodeParameter('expiredOnly', i, false) as boolean;
+    const idFormat = this.getNodeParameter('idFormat', i, 'all') as string;
 
-    const extra = buildExtraConditions(quoteStatusFilter, quickFilters);
-    const conditions = appendConditions(baseConditions ?? '', extra);
+    const extraParts: string[] = [];
+    if (quoteStatus === 'allClosed') {
+      extraParts.push('quoteStatus != "Active"');
+    } else if (quoteStatus !== 'all') {
+      const statusValueMap: Record<string, string> = {
+        active:     'Active',
+        archived:   'Archived',
+        deleted:    'Deleted',
+        lost:       'Lost',
+        noDecision: 'No Decision',
+        won:        'Won',
+      };
+      const apiValue = statusValueMap[quoteStatus];
+      if (apiValue) extraParts.push(`quoteStatus = "${apiValue}"`);
+    }
+    if (expiredOnly) {
+      const today = new Date().toISOString().split('T')[0];
+      extraParts.push(`expirationDate < [${today}]`);
+    }
+    // Push ID format filter server-side so it applies before pagination.
+    // New-format IDs start with 'q'; UUID IDs use hex chars (0-9, a-f) which sort before 'q'.
+    if (idFormat === 'newOnly') {
+      extraParts.push('id >= "q" AND id < "r"');
+    } else if (idFormat === 'legacyOnly') {
+      extraParts.push('id < "q"');
+    }
+    const conditions = appendConditions(baseConditions ?? '', extraParts.join(' AND '));
 
     const qs: IDataObject = {};
     if (conditions) qs.conditions = conditions;
@@ -690,9 +711,7 @@ export async function executeQuotes(
       )) as IDataObject[];
     }
 
-    for (const entry of results) {
-      returnData.push({ json: { ...entry, syntheticStatus: computeSyntheticStatus(entry) } });
-    }
+    for (const entry of results) returnData.push({ json: entry });
   }
 
   if (operation === 'get') {
@@ -717,8 +736,50 @@ export async function executeQuotes(
     returnData.push({ json: res as IDataObject });
   }
 
+  if (operation === 'closeAsLost' || operation === 'closeAsNoDecision' || operation === 'closeAsWon') {
+    const quoteId = this.getNodeParameter('quoteId', i) as string;
+    if (isLegacyQuoteId(quoteId)) {
+      throw new NodeOperationError(
+        this.getNode(),
+        `Quote ID "${quoteId}" uses the legacy UUID format. The ConnectWise CPQ API does not support PATCH operations on legacy quotes — close operations (Lost, Won, No Decision) require PATCH and will return a 500 error. Use the Delete operation instead (which does work on legacy quotes), or close the quote manually in the CPQ GUI.`,
+        { itemIndex: i },
+      );
+    }
+    const wonOrLostDateRaw = this.getNodeParameter('wonOrLostDate', i, '') as string;
+    const closedDate = wonOrLostDateRaw ? new Date(wonOrLostDateRaw).toISOString() : new Date().toISOString();
+    const statusMap: Record<string, string> = { closeAsLost: 'Lost', closeAsNoDecision: 'No Decision', closeAsWon: 'Won' };
+    const status = statusMap[operation];
+
+    const ops: Array<{ op: 'replace'; path: string; value: unknown }> = [
+      { op: 'replace', path: '/quoteStatus', value: status },
+      { op: 'replace', path: '/wonOrLostDate', value: closedDate },
+    ];
+
+    if (operation === 'closeAsLost' || operation === 'closeAsNoDecision') {
+      const lostReason = this.getNodeParameter('lostReason', i, '') as string;
+      if (lostReason) ops.push({ op: 'replace', path: '/lostReason', value: lostReason });
+    }
+
+    if (operation === 'closeAsWon') {
+      const winForm = this.getNodeParameter('winForm', i, '') as string;
+      if (winForm) ops.push({ op: 'replace', path: '/winForm', value: winForm });
+    }
+
+
+    const patchBody = prepareJsonPatch(ops);
+    const res = (await cpqApiRequest.call(this, 'PATCH', `/api/quotes/${encodeURIComponent(quoteId)}`, patchBody)) as IDataObject;
+    returnData.push({ json: res });
+  }
+
   if (operation === 'update') {
     const quoteId = this.getNodeParameter('quoteId', i) as string;
+    if (isLegacyQuoteId(quoteId)) {
+      throw new NodeOperationError(
+        this.getNode(),
+        `Quote ID "${quoteId}" uses the legacy UUID format. The ConnectWise CPQ API does not support PATCH operations on legacy quotes and returns a 500 error. Only quotes with the newer alphanumeric ID format (e.g. q639088936162812241alWXeGX) can be updated via the API.`,
+        { itemIndex: i },
+      );
+    }
     const updateFields = this.getNodeParameter('updateFields', i, {}) as {
       values?: Array<{ field: string; value: string }>;
     };

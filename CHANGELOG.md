@@ -1,3 +1,24 @@
+## 0.3.0 — 2026-03-12
+
+### Added
+
+- **ConnectWise CPQ AI Tools node** (`ConnectWiseCpqAiTools`) — a new companion node that exposes all 9 CPQ resources as AI tools for the n8n AI Agent and MCP Trigger (including queue mode).
+  - One unified `DynamicStructuredTool` per resource with a required `operation` enum field in the schema — ensures reliable dispatch through all execution paths, including MCP Trigger queue mode.
+  - Resources exposed: Quote, Quote Item, Quote Customer, Quote Tab, Quote Term, Recurring Revenue, Tax Code, Template, User.
+  - All filter/listing operations accept a raw `conditions` string (CPQ filter syntax, e.g. `name = "Acme" and closedFlag = True`).
+  - PATCH operations accept an `updatePatch` JSON array (`[{"field":"name","value":"Acme"}]`) and route through the existing `castUpdateValue` type-casting logic.
+  - `allowWriteOperations` toggle (default off) gates mutating operations (create, update, delete, replace, copy, deleteVersion) — safe-by-default for read-only agent use.
+  - LLM-optimised tool descriptions with CPQ conditions syntax reminders and `updatePatch` format hints.
+  - Structured error responses with `nextAction` guidance to help agents self-correct (e.g. `NO_RESULTS_FOUND`, `MISSING_ENTITY_ID`, `ENTITY_NOT_FOUND`).
+  - Runtime Zod and `DynamicStructuredTool` resolved from n8n's own module tree via `createRequire` — fixes silent `instanceof` failures that break MCP Trigger tool registration.
+
+### Internal
+
+- `QUOTE_FIELD_TYPES`, `QUOTE_ITEM_FIELD_TYPES`, `CUSTOMER_FIELD_TYPES`, `QUOTE_TERM_FIELD_TYPES`, `USER_FIELD_TYPES` constants in their respective resource files are now exported (previously private) so they can be reused by the AI Tools executor.
+- Added `@langchain/core` and `zod` as `devDependencies` (TypeScript types only; runtime instances come from n8n's module tree).
+
+---
+
 ## 0.2.0 — 2026-03-03
 
 ### Breaking Changes

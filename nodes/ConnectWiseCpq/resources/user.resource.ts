@@ -3,7 +3,7 @@ import { NodeOperationError } from 'n8n-workflow';
 import { cpqApiRequest, cpqApiRequestAllItems, prepareJsonPatch, buildFiltersFromUi, castUpdateValue } from '../GenericFunctions';
 import { MAX_PAGE_SIZE } from './constants';
 
-const USER_FIELD_TYPES: Record<string, string> = {
+export const USER_FIELD_TYPES: Record<string, string> = {
   alwaysRequireManagerApproval: 'boolean',
   approverUserId: 'string',
   baseCurrency: 'string',

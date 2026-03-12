@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-connectwise-cpq",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "n8n community node for ConnectWise CPQ (Sell) REST API.",
   "keywords": [
     "n8n-community-node-package"
@@ -26,7 +26,8 @@
       "dist/credentials/ConnectWiseCpqApi.credentials.js"
     ],
     "nodes": [
-      "dist/nodes/ConnectWiseCpq/ConnectWiseCpq.node.js"
+      "dist/nodes/ConnectWiseCpq/ConnectWiseCpq.node.js",
+      "dist/nodes/ConnectWiseCpq/ConnectWiseCpqAiTools.node.js"
     ]
   },
   "repository": {
@@ -42,6 +43,7 @@
   },
   "homepage": "https://github.com/msoukhomlinov/n8n-nodes-connectwise-cpq#readme",
   "devDependencies": {
+    "@langchain/core": "^0.3.0",
     "@typescript-eslint/eslint-plugin": "~8.32.0",
     "@types/node": "^20.19.9",
     "@typescript-eslint/parser": "~8.32.0",
@@ -49,7 +51,8 @@
     "eslint-plugin-n8n-nodes-base": "^1.16.3",
     "gulp": "^5.0.0",
     "prettier": "^3.5.3",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "zod": "^3.0.0"
   },
   "peerDependencies": {
     "n8n-workflow": "*"

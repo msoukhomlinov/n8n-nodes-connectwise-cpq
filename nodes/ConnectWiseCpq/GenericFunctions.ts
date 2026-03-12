@@ -67,6 +67,7 @@ export async function cpqApiRequest(
           method: requestOptions.method,
           url: requestOptions.url,
           qs: requestOptions.qs,
+          body: requestOptions.body,
           headers: maskedHeaders,
           username: debugShowAuthToken ? username : `${accessKey}+***`,
           tokenPreview: debugShowAuthToken ? `Basic ${basicToken}` : 'Basic ***',
@@ -108,7 +109,7 @@ export async function cpqApiRequest(
       // Retry on 429 or transient 5xx
       const err = error as { statusCode?: number; response?: { status?: number } };
       const statusCode = err.statusCode ?? err.response?.status;
-      if ([429, 500, 502, 503, 504].includes(Number(statusCode)) && attempt < maxRetries - 1) {
+      if ([429, 502, 503, 504].includes(Number(statusCode)) && attempt < maxRetries - 1) {
         const backoff = 500 * Math.pow(2, attempt); // 500ms, 1000ms, 2000ms
         await new Promise((resolve) => setTimeout(resolve, backoff));
         attempt += 1;

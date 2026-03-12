@@ -8,7 +8,7 @@ import { NodeOperationError } from 'n8n-workflow';
 import { cpqApiRequest, cpqApiRequestAllItems, prepareJsonPatch, buildFiltersFromUi, castUpdateValue } from '../GenericFunctions';
 import { MAX_PAGE_SIZE } from './constants';
 
-const CUSTOMER_FIELD_TYPES: Record<string, string> = {
+export const CUSTOMER_FIELD_TYPES: Record<string, string> = {
   accountName: 'string',
   accountNumber: 'string',
   address1: 'string',
@@ -21,7 +21,6 @@ const CUSTOMER_FIELD_TYPES: Record<string, string> = {
   customCustomerString3: 'string',
   customerSource: 'string',
   customerSourceId: 'string',
-  customerType: 'string',
   dayPhone: 'string',
   description: 'string',
   emailAddress: 'string',
@@ -31,7 +30,6 @@ const CUSTOMER_FIELD_TYPES: Record<string, string> = {
   lastName: 'string',
   locationId: 'string',
   mobilePhone: 'string',
-  modifyDate: 'string',
   postalCode: 'string',
   priceLevel: 'string',
   priceLevelName: 'string',
@@ -120,7 +118,6 @@ export const quoteCustomersFields: INodeProperties[] = [
               { name: 'Custom Customer String3', value: 'customCustomerString3' },
               { name: 'Customer Source', value: 'customerSource' },
               { name: 'Customer Source ID', value: 'customerSourceId' },
-              { name: 'Customer Type', value: 'customerType' },
               { name: 'Day Phone', value: 'dayPhone' },
               { name: 'Description', value: 'description' },
               { name: 'Email Address', value: 'emailAddress' },
@@ -130,7 +127,6 @@ export const quoteCustomersFields: INodeProperties[] = [
               { name: 'Last Name', value: 'lastName' },
               { name: 'Location ID', value: 'locationId' },
               { name: 'Mobile Phone', value: 'mobilePhone' },
-              { name: 'Modify Date', value: 'modifyDate' },
               { name: 'Postal Code', value: 'postalCode' },
               { name: 'Price Level', value: 'priceLevel' },
               { name: 'Price Level Name', value: 'priceLevelName' },

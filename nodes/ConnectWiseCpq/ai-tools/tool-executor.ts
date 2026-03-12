@@ -7,9 +7,8 @@ import {
 } from '../GenericFunctions';
 import {
     QUOTE_FIELD_TYPES,
-    buildExtraConditions,
     appendConditions,
-    computeSyntheticStatus,
+    // isLegacyQuoteId, // TEMPORARILY DISABLED for legacy quote debugging — re-enable when done
 } from '../resources/quotes.resource';
 import { QUOTE_ITEM_FIELD_TYPES } from '../resources/quoteItems.resource';
 import { CUSTOMER_FIELD_TYPES } from '../resources/quoteCustomers.resource';
@@ -121,21 +120,46 @@ async function executeQuotes(
 
     switch (operation) {
         case 'getAll': {
-            const quoteStatusFilter = (params.quoteStatusFilter as string | undefined) ?? 'all';
-            const quickFilters = Array.isArray(params.quickFilters)
-                ? (params.quickFilters as string[])
-                : ['workingOnly'];
-            const extra = buildExtraConditions(quoteStatusFilter, quickFilters);
-            const finalConditions = appendConditions(conditions ?? '', extra);
+            const quoteStatus = (params.quoteStatus as string | undefined) ?? 'all';
+            const expiredOnly = params.expiredOnly === true;
+
+            const idFormat = (params.idFormat as string | undefined) ?? 'all';
+
+            const extraParts: string[] = [];
+            if (quoteStatus === 'allClosed') {
+                extraParts.push('quoteStatus != "Active"');
+            } else if (quoteStatus !== 'all') {
+                const statusValueMap: Record<string, string> = {
+                    active:     'Active',
+                    archived:   'Archived',
+                    deleted:    'Deleted',
+                    lost:       'Lost',
+                    noDecision: 'No Decision',
+                    won:        'Won',
+                };
+                const apiValue = statusValueMap[quoteStatus];
+                if (apiValue) extraParts.push(`quoteStatus = "${apiValue}"`);
+            }
+            if (expiredOnly) {
+                const today = new Date().toISOString().split('T')[0];
+                extraParts.push(`expirationDate < [${today}]`);
+            }
+            // Push ID format filter server-side so it applies before pagination.
+            // New-format IDs start with 'q'; UUID IDs use hex chars (0-9, a-f) which sort before 'q'.
+            if (idFormat === 'newOnly') {
+                extraParts.push('id >= "q" AND id < "r"');
+            } else if (idFormat === 'legacyOnly') {
+                extraParts.push('id < "q"');
+            }
+            const finalConditions = appendConditions(conditions ?? '', extraParts.join(' AND '));
 
             const qs: IDataObject = {};
             if (finalConditions) qs.conditions = finalConditions;
             if (includeFields) qs.includeFields = includeFields;
             if (showAllVersions) qs.showAllVersions = showAllVersions;
 
-            const records = (await getAllItems(ctx, '/api/quotes', qs, limit)) as IDataObject[];
-            const enriched = records.map(r => ({ ...r, syntheticStatus: computeSyntheticStatus(r) }));
-            return getAllResult('quotes', operation, enriched, finalConditions, limit);
+            const records = await getAllItems(ctx, '/api/quotes', qs, limit);
+            return getAllResult('quotes', operation, records, finalConditions, limit);
         }
         case 'get': {
             const quoteId = params.quoteId as string | undefined;
@@ -159,15 +183,59 @@ async function executeQuotes(
         case 'delete': {
             const quoteId = params.quoteId as string | undefined;
             if (!quoteId) return JSON.stringify(formatMissingIdError('quotes', operation));
+            // TEMPORARILY DISABLED for legacy quote debugging — re-enable when done
+            // if (isLegacyQuoteId(quoteId)) return JSON.stringify({
+            //     error: true, errorType: 'LEGACY_QUOTE_ID',
+            //     message: `Quote ID "${quoteId}" uses the legacy UUID format and cannot be modified via the API. Only quotes with the newer alphanumeric ID format (e.g. q639088936162812241alWXeGX) support write operations.`,
+            //     nextAction: 'Skip this quote or perform the action manually in the CPQ UI.',
+            // });
             await cpqApiRequest.call(ctx, 'DELETE', `/api/quotes/${encodeURIComponent(quoteId)}`);
             return JSON.stringify({ success: true, operation, result: { quoteId, deleted: true } });
         }
         case 'update': {
             const quoteId = params.quoteId as string | undefined;
             if (!quoteId) return JSON.stringify(formatMissingIdError('quotes', operation));
+            // TEMPORARILY DISABLED for legacy quote debugging — re-enable when done
+            // if (isLegacyQuoteId(quoteId)) return JSON.stringify({
+            //     error: true, errorType: 'LEGACY_QUOTE_ID',
+            //     message: `Quote ID "${quoteId}" uses the legacy UUID format and cannot be modified via the API. Only quotes with the newer alphanumeric ID format (e.g. q639088936162812241alWXeGX) support write operations.`,
+            //     nextAction: 'Skip this quote or perform the action manually in the CPQ UI.',
+            // });
             const updatePatch = params.updatePatch as string | undefined;
             if (!updatePatch) return JSON.stringify(formatMissingIdError('quotes', 'update.updatePatch'));
             const patchBody = buildPatch(ctx, updatePatch, QUOTE_FIELD_TYPES);
+            const result = await cpqApiRequest.call(
+                ctx, 'PATCH', `/api/quotes/${encodeURIComponent(quoteId)}`, patchBody,
+            );
+            return JSON.stringify({ success: true, operation, result });
+        }
+        case 'closeAsLost':
+        case 'closeAsNoDecision':
+        case 'closeAsWon': {
+            const quoteId = params.quoteId as string | undefined;
+            if (!quoteId) return JSON.stringify(formatMissingIdError('quotes', operation));
+            // TEMPORARILY DISABLED for legacy quote debugging — re-enable when done
+            // if (isLegacyQuoteId(quoteId)) return JSON.stringify({
+            //     error: true, errorType: 'LEGACY_QUOTE_ID',
+            //     message: `Quote ID "${quoteId}" uses the legacy UUID format and cannot be modified via the API. Only quotes with the newer alphanumeric ID format (e.g. q639088936162812241alWXeGX) support write operations.`,
+            //     nextAction: 'Skip this quote or perform the action manually in the CPQ UI.',
+            // });
+            const closeStatusMap: Record<string, string> = { closeAsLost: 'Lost', closeAsNoDecision: 'No Decision', closeAsWon: 'Won' };
+            const status = closeStatusMap[operation];
+            const wonOrLostDateRaw = params.wonOrLostDate as string | undefined;
+            const closedDate = wonOrLostDateRaw ? new Date(wonOrLostDateRaw).toISOString() : new Date().toISOString();
+            const ops: Array<{ op: 'replace'; path: string; value: unknown }> = [
+                { op: 'replace', path: '/quoteStatus', value: status },
+                { op: 'replace', path: '/wonOrLostDate', value: closedDate },
+            ];
+            if ((operation === 'closeAsLost' || operation === 'closeAsNoDecision') && params.lostReason) {
+                ops.push({ op: 'replace', path: '/lostReason', value: params.lostReason as string });
+            }
+
+            if (operation === 'closeAsWon' && params.winForm) {
+                ops.push({ op: 'replace', path: '/winForm', value: params.winForm as string });
+            }
+            const patchBody = prepareJsonPatch(ops);
             const result = await cpqApiRequest.call(
                 ctx, 'PATCH', `/api/quotes/${encodeURIComponent(quoteId)}`, patchBody,
             );

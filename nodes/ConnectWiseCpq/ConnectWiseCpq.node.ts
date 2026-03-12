@@ -251,6 +251,7 @@ export class ConnectWiseCpq implements INodeType {
         type: 'number',
         typeOptions: {
           minValue: 1,
+          maxValue: 1000,
         },
         description: 'Max number of results to return',
         default: 50,

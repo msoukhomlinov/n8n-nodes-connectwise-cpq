@@ -20,23 +20,30 @@ const LIMIT_DESC =
 const SHOW_ALL_VERSIONS_DESC =
     'If true, returns all quote versions. If false (default), returns only the latest version per quote.';
 
-const QUOTE_STATUS_FILTER_DESC =
-    'Lifecycle status filter. Compiles to CPQ conditions server-side. ' +
-    'Values: all (default), draft, sent, pendingApproval, managerApproved, acceptedWon, invoiced, lost, archived.';
+const QUOTE_STATUS_DESC =
+    'Filter by quote lifecycle status. ' +
+    'Values: all (default, no filter), active (open/in-play quotes), ' +
+    'allClosed (any non-Active status), won, lost, noDecision, archived, deleted.';
 
-const QUICK_FILTERS_DESC =
-    'Pre-built filters (array). Each compiles to CPQ conditions. ' +
-    'workingOnly: excludes templates/request-quotes (default). ' +
-    'activePipeline: excludes lost/archived/accepted/invoiced. ' +
-    'expiryRisk: past-expiry open quotes. Pass [] to disable all.';
+const ID_FORMAT_DESC =
+    'Filter results by quote ID format. ' +
+    'newOnly returns only API-writable quotes (alphanumeric IDs, e.g. q639088936162812241alWXeGX). ' +
+    'legacyOnly returns only legacy UUID-format quotes that cannot be modified via the API. ' +
+    'Omit or use "all" to return all quotes.';
+
+const EXPIRED_ONLY_DESC =
+    'If true, only returns quotes whose expirationDate is in the past. ' +
+    'Most useful with quoteStatus=active. Default false.';
 
 const QUOTE_ID_DESC =
-    'Numeric quote ID (from a prior getAll result). Required for quote-scoped operations.';
+    'Internal system ID of the quote (the id field from a prior getAll result). ' +
+    'This is NOT the user-visible quote number — use quoteNumber for version operations.';
 
 const ID_DESC = 'Numeric record ID (from a prior getAll result).';
 
 const QUOTE_NUMBER_DESC =
-    'Quote number integer (NOT the same as quote ID). Used for version-related operations.';
+    'User-visible quote number (the quoteNumber integer field users see in CPQ, e.g. 1234). ' +
+    'This is NOT the internal system id — use quoteId for get/update/delete/copy operations.';
 
 const QUOTE_VERSION_DESC =
     'Quote version number (positive integer). Required for getVersion and deleteVersion.';
@@ -53,13 +60,10 @@ function quotesGetAllSchema(): z.ZodObject<z.ZodRawShape> {
         includeFields: z.string().optional().describe(INCLUDE_FIELDS_DESC),
         showAllVersions: z.boolean().optional().describe(SHOW_ALL_VERSIONS_DESC),
         limit: z.number().int().min(1).max(1000).optional().describe(LIMIT_DESC),
-        quoteStatusFilter: z.enum([
-            'all', 'draft', 'sent', 'pendingApproval', 'managerApproved',
-            'acceptedWon', 'invoiced', 'lost', 'archived',
-        ]).optional().describe(QUOTE_STATUS_FILTER_DESC),
-        quickFilters: z.array(z.enum(['workingOnly', 'activePipeline', 'expiryRisk']))
-            .optional()
-            .describe(QUICK_FILTERS_DESC),
+        quoteStatus: z.enum(['all', 'active', 'allClosed', 'won', 'lost', 'noDecision', 'archived', 'deleted'])
+            .optional().describe(QUOTE_STATUS_DESC),
+        expiredOnly: z.boolean().optional().describe(EXPIRED_ONLY_DESC),
+        idFormat: z.enum(['all', 'newOnly', 'legacyOnly']).optional().describe(ID_FORMAT_DESC),
     });
 }
 
@@ -114,6 +118,30 @@ function quotesDeleteVersionSchema(): z.ZodObject<z.ZodRawShape> {
     return z.object({
         quoteNumber: z.number().int().optional().describe(QUOTE_NUMBER_DESC),
         quoteVersion: z.number().int().optional().describe(QUOTE_VERSION_DESC),
+    });
+}
+
+function quotesCloseAsLostSchema(): z.ZodObject<z.ZodRawShape> {
+    return z.object({
+        quoteId: z.string().optional().describe(QUOTE_ID_DESC),
+        lostReason: z.string().optional().describe('Optional reason the quote was lost.'),
+        wonOrLostDate: z.string().optional().describe('ISO datetime for when the quote was closed. Defaults to now if omitted.'),
+    });
+}
+
+function quotesCloseAsWonSchema(): z.ZodObject<z.ZodRawShape> {
+    return z.object({
+        quoteId: z.string().optional().describe(QUOTE_ID_DESC),
+        winForm: z.string().optional().describe('Optional reason the quote was won.'),
+        wonOrLostDate: z.string().optional().describe('ISO datetime for when the quote was closed. Defaults to now if omitted.'),
+    });
+}
+
+function quotesCloseAsNoDecisionSchema(): z.ZodObject<z.ZodRawShape> {
+    return z.object({
+        quoteId: z.string().optional().describe(QUOTE_ID_DESC),
+        lostReason: z.string().optional().describe('Optional reason the quote resulted in no decision.'),
+        wonOrLostDate: z.string().optional().describe('ISO datetime for when the quote was closed. Defaults to now if omitted.'),
     });
 }
 
@@ -282,9 +310,12 @@ const OPERATION_LABELS: Record<string, string> = {
     copy: 'Copy',
     getVersions: 'Get versions',
     getVersion: 'Get version',
-    getLatestVersion: 'Get latest version',
+    getLatestVersion: 'Get by quote number',
     deleteVersion: 'Delete version',
     getItems: 'Get items by tab',
+    closeAsLost: 'Close as lost',
+    closeAsNoDecision: 'Close as no decision',
+    closeAsWon: 'Close as won',
 };
 
 function isValidOperation(op: string): boolean {
@@ -307,6 +338,9 @@ function getSchemaForOperation(
                 case 'getVersion':       return quotesGetVersionSchema();
                 case 'getLatestVersion': return quotesGetLatestVersionSchema();
                 case 'deleteVersion':    return quotesDeleteVersionSchema();
+                case 'closeAsLost':       return quotesCloseAsLostSchema();
+                case 'closeAsNoDecision': return quotesCloseAsNoDecisionSchema();
+                case 'closeAsWon':        return quotesCloseAsWonSchema();
                 default:                 return z.object({});
             }
         case 'quoteItems':
