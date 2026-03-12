@@ -8,7 +8,7 @@ import { NodeOperationError } from 'n8n-workflow';
 import { cpqApiRequest, cpqApiRequestAllItems, buildFiltersFromUi, prepareJsonPatch, castUpdateValue } from '../GenericFunctions';
 import { MAX_PAGE_SIZE } from './constants';
 
-const QUOTE_FIELD_TYPES: Record<string, string> = {
+export const QUOTE_FIELD_TYPES: Record<string, string> = {
   accountName: 'string',
   approvalAmount: 'number',
   approvalComment: 'string',
@@ -210,6 +210,67 @@ const QUOTE_FIELD_TYPES: Record<string, string> = {
   zCustomQuoteString9: 'string',
 };
 
+// ── Synthetic status helpers ──────────────────────────────────────────────
+
+/** Precedence-ordered status label for a quote object. Always computed from raw fields. */
+export function computeSyntheticStatus(q: IDataObject): string {
+  if (q.isArchive === true) return 'Archived';
+  if (q.isLost === true) return 'Lost';
+  if (q.invoicePostStatus === 'Posted') return 'Invoiced';
+  if (q.isAccepted === true) return 'Accepted / Won';
+  if (q.isManagerApproved === true && q.isAccepted === false) return 'Manager Approved';
+  if (q.approvalStatus !== undefined && q.approvalStatus !== 'None' && q.isManagerApproved === false)
+    return 'Pending Approval';
+  if (q.isSent === true) return 'Sent';
+  return 'Draft';
+}
+
+const STATUS_CONDITIONS: Record<string, string> = {
+  archived:         'isArchive = True',
+  lost:             'isLost = True',
+  invoiced:         'invoicePostStatus = "Posted"',
+  acceptedWon:      'isAccepted = True AND isArchive = False AND isLost = False AND invoicePostStatus != "Posted"',
+  managerApproved:  'isManagerApproved = True AND isAccepted = False AND isLost = False AND isArchive = False',
+  pendingApproval:  'approvalStatus != "None" AND isManagerApproved = False AND isAccepted = False AND isLost = False AND isArchive = False',
+  sent:             'isSent = True AND isAccepted = False AND isLost = False AND isArchive = False AND invoicePostStatus != "Posted"',
+  draft:            'isArchive = False AND isLost = False AND invoicePostStatus != "Posted" AND isAccepted = False AND isManagerApproved = False AND approvalStatus = "None" AND isSent = False',
+};
+
+const QUICK_FILTER_CONDITIONS: Record<string, () => string> = {
+  workingOnly:    () => 'isRequestTemplate = False AND isRequestQuote = False',
+  activePipeline: () => 'isLost = False AND isArchive = False AND isAccepted = False AND invoicePostStatus != "Posted"',
+  expiryRisk:     () => {
+    const today = new Date().toISOString().split('T')[0];
+    return `expirationDate < [${today}] AND isAccepted = False AND isLost = False AND isArchive = False`;
+  },
+};
+
+/**
+ * Builds the extra CPQ conditions string from the synthetic status filter and quick filters.
+ * Returns empty string if neither is active (caller should skip adding to qs).
+ */
+export function buildExtraConditions(statusFilter: string, quickFilters: string[]): string {
+  const parts: string[] = [];
+  if (statusFilter && statusFilter !== 'all' && STATUS_CONDITIONS[statusFilter]) {
+    parts.push(STATUS_CONDITIONS[statusFilter]);
+  }
+  for (const qf of quickFilters) {
+    const fn = QUICK_FILTER_CONDITIONS[qf];
+    if (fn) parts.push(fn());
+  }
+  return parts.join(' AND ');
+}
+
+/**
+ * AND-appends `extra` to `base`, wrapping base in parens if it contains OR logic.
+ */
+export function appendConditions(base: string, extra: string): string {
+  if (!extra) return base;
+  if (!base) return extra;
+  const wrappedBase = /\bOR\b/i.test(base) ? `(${base})` : base;
+  return `${wrappedBase} AND ${extra}`;
+}
+
 export const quotesOperations: INodeProperties[] = [
   {
     displayName: 'Operation',
@@ -278,6 +339,50 @@ export const quotesOperations: INodeProperties[] = [
 ];
 
 export const quotesFields: INodeProperties[] = [
+  {
+    displayName: 'Quote Status',
+    name: 'quoteStatusFilter',
+    type: 'options',
+    displayOptions: { show: { resource: ['quotes'], operation: ['getAll'] } },
+    options: [
+      { name: 'Accepted / Won',    value: 'acceptedWon' },
+      { name: 'All',               value: 'all' },
+      { name: 'Archived',          value: 'archived' },
+      { name: 'Draft',             value: 'draft' },
+      { name: 'Invoiced',          value: 'invoiced' },
+      { name: 'Lost',              value: 'lost' },
+      { name: 'Manager Approved',  value: 'managerApproved' },
+      { name: 'Pending Approval',  value: 'pendingApproval' },
+      { name: 'Sent',              value: 'sent' },
+    ],
+    default: 'all',
+    description: 'Filter quotes to a single lifecycle status. Compiled server-side as CPQ conditions. "syntheticStatus" is always added to output items regardless of this setting.',
+  },
+  {
+    displayName: 'Quick Filters',
+    name: 'quickFilters',
+    type: 'multiOptions',
+    displayOptions: { show: { resource: ['quotes'], operation: ['getAll'] } },
+    options: [
+      {
+        name: 'Working Quotes Only',
+        value: 'workingOnly',
+        description: 'Excludes request templates and request quotes (isRequestTemplate = false AND isRequestQuote = false)',
+      },
+      {
+        name: 'Active Pipeline Only',
+        value: 'activePipeline',
+        description: 'Excludes lost, archived, accepted, and invoiced quotes',
+      },
+      {
+        name: 'Expiry Risk',
+        value: 'expiryRisk',
+        description: 'Only quotes past their expiration date that are still open (not accepted, lost, or archived)',
+      },
+    ],
+    default: ['workingOnly'],
+    description: 'Pre-built filters compiled server-side as CPQ conditions. Can be combined. "Working Quotes Only" is on by default.',
+  },
   {
     displayName: 'Quote ID',
     name: 'quoteId',
@@ -557,43 +662,36 @@ export async function executeQuotes(
     };
     const filterLogic = this.getNodeParameter('filterLogic', i, 'and') as 'and' | 'or';
     const additionalOptions = this.getNodeParameter('additionalOptions', i, {}) as { rawConditions?: string };
-    const conditions = buildFiltersFromUi(filters, filterLogic, additionalOptions.rawConditions);
+    const baseConditions = buildFiltersFromUi(filters, filterLogic, additionalOptions.rawConditions);
     const includeFieldsRaw = this.getNodeParameter('includeFields', i, '') as string | string[];
     const includeFields = Array.isArray(includeFieldsRaw) ? includeFieldsRaw.join(',') : includeFieldsRaw;
     const showAllVersions = this.getNodeParameter('showAllVersions', i, false) as boolean;
+    const quoteStatusFilter = this.getNodeParameter('quoteStatusFilter', i, 'all') as string;
+    const quickFilters = this.getNodeParameter('quickFilters', i, ['workingOnly']) as string[];
+
+    const extra = buildExtraConditions(quoteStatusFilter, quickFilters);
+    const conditions = appendConditions(baseConditions ?? '', extra);
 
     const qs: IDataObject = {};
     if (conditions) qs.conditions = conditions;
     if (includeFields) qs.includeFields = includeFields;
     if (showAllVersions) qs.showAllVersions = showAllVersions;
 
+    let results: IDataObject[];
+
     if (returnAll) {
-      const all = (await cpqApiRequestAllItems.call(
-        this,
-        '',
-        'GET',
-        '/api/quotes',
-        {},
-        qs as IDataObject,
-        {},
-        undefined,
-        MAX_PAGE_SIZE,
-      )) as unknown[];
-      for (const entry of all as IDataObject[]) returnData.push({ json: entry });
+      results = (await cpqApiRequestAllItems.call(
+        this, '', 'GET', '/api/quotes', {}, qs as IDataObject, {}, undefined, MAX_PAGE_SIZE,
+      )) as IDataObject[];
     } else {
       const effectivePageSize = Math.min(typeof limit === 'number' ? limit : pageSize, MAX_PAGE_SIZE);
-      const some = (await cpqApiRequestAllItems.call(
-        this,
-        '',
-        'GET',
-        '/api/quotes',
-        {},
-        qs as IDataObject,
-        {},
-        limit,
-        effectivePageSize,
-      )) as unknown[];
-      for (const entry of some as IDataObject[]) returnData.push({ json: entry });
+      results = (await cpqApiRequestAllItems.call(
+        this, '', 'GET', '/api/quotes', {}, qs as IDataObject, {}, limit, effectivePageSize,
+      )) as IDataObject[];
+    }
+
+    for (const entry of results) {
+      returnData.push({ json: { ...entry, syntheticStatus: computeSyntheticStatus(entry) } });
     }
   }
 
