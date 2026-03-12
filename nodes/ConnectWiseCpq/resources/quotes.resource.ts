@@ -238,6 +238,24 @@ export const quotesOperations: INodeProperties[] = [
     displayOptions: { show: { resource: ['quotes'] } },
     options: [
       {
+        name: 'Close as Lost',
+        value: 'closeAsLost',
+        description: 'Mark a quote as Lost. Sets quoteStatus and wonOrLostDate in one operation.',
+        action: 'Close a quote as lost',
+      },
+      {
+        name: 'Close as No Decision',
+        value: 'closeAsNoDecision',
+        description: 'Mark a quote as No Decision. Sets quoteStatus and wonOrLostDate in one operation.',
+        action: 'Close a quote as no decision',
+      },
+      {
+        name: 'Close as Won',
+        value: 'closeAsWon',
+        description: 'Mark a quote as Won. Sets quoteStatus and wonOrLostDate in one operation.',
+        action: 'Close a quote as won',
+      },
+      {
         name: 'Copy',
         value: 'copy',
         description: 'Copy a quote or template by ID. Also copies tabs, items, and quote customers.',
@@ -258,13 +276,13 @@ export const quotesOperations: INodeProperties[] = [
       {
         name: 'Get',
         value: 'get',
-        description: 'Get a quote by internal system ID (the id field, not the user-visible quote number)',
+        description: 'Get a quote by internal system ID (the ID field, not the user-visible quote number)',
         action: 'Get a quote',
       },
       {
         name: 'Get by Quote Number',
         value: 'getLatestVersion',
-        description: 'Get a quote by user-visible quote number (quoteNumber field, not the internal system id)',
+        description: 'Get a quote by user-visible quote number (quoteNumber field, not the internal system ID)',
         action: 'Get a quote by quote number',
       },
       {
@@ -284,24 +302,6 @@ export const quotesOperations: INodeProperties[] = [
         value: 'getVersions',
         description: 'Get all versions of a quote by user-visible quote number',
         action: 'Get all quote versions',
-      },
-      {
-        name: 'Close as Lost',
-        value: 'closeAsLost',
-        description: 'Mark a quote as Lost. Sets quoteStatus and wonOrLostDate in one operation.',
-        action: 'Close a quote as lost',
-      },
-      {
-        name: 'Close as No Decision',
-        value: 'closeAsNoDecision',
-        description: 'Mark a quote as No Decision. Sets quoteStatus and wonOrLostDate in one operation.',
-        action: 'Close a quote as no decision',
-      },
-      {
-        name: 'Close as Won',
-        value: 'closeAsWon',
-        description: 'Mark a quote as Won. Sets quoteStatus and wonOrLostDate in one operation.',
-        action: 'Close a quote as won',
       },
       {
         name: 'Update',
@@ -348,8 +348,8 @@ export const quotesFields: INodeProperties[] = [
     displayOptions: { show: { resource: ['quotes'], operation: ['getAll'] } },
     options: [
       { name: 'All', value: 'all' },
-      { name: 'New Format Only (API-writable)', value: 'newOnly' },
-      { name: 'Legacy Format Only (read-only via API)', value: 'legacyOnly' },
+      { name: 'New Format Only (API-Writable)', value: 'newOnly' },
+      { name: 'Legacy Format Only (Read-only via API)', value: 'legacyOnly' },
     ],
     default: 'all',
     description: 'Filter results by quote ID format. Legacy quotes (UUID format) cannot be modified via the API — use "New Format Only" to return only quotes that support update/close/delete operations.',
@@ -360,7 +360,7 @@ export const quotesFields: INodeProperties[] = [
     type: 'string',
     required: true,
     default: '',
-    description: 'The internal system ID of the quote (id field from API results, not the user-visible quote number)',
+    description: 'The internal system ID of the quote (ID field from API results, not the user-visible quote number)',
     displayOptions: { show: { resource: ['quotes'], operation: ['get', 'delete', 'copy', 'update', 'closeAsLost', 'closeAsNoDecision', 'closeAsWon'] } },
   },
   {
@@ -393,7 +393,7 @@ export const quotesFields: INodeProperties[] = [
     type: 'number',
     required: true,
     default: 0,
-    description: 'The user-visible quote number (quoteNumber integer users see in CPQ, not the internal system id)',
+    description: 'The user-visible quote number (quoteNumber integer users see in CPQ, not the internal system ID)',
     displayOptions: { show: { resource: ['quotes'], operation: ['getVersions', 'getLatestVersion', 'getVersion', 'deleteVersion'] } },
   },
   {
@@ -470,7 +470,7 @@ export const quotesFields: INodeProperties[] = [
               { name: 'Invoice Post User', value: 'invoicePostUser' },
               { name: 'Is Accepted', value: 'isAccepted' },
               { name: 'Is Archive', value: 'isArchive' },
-              { name: 'Is Lost (also set Won Or Lost Date)', value: 'isLost' },
+              { name: 'Is Lost (Also Set Won Or Lost Date)', value: 'isLost' },
               { name: 'Is Manager Approved', value: 'isManagerApproved' },
               { name: 'Is Order Porter Approved', value: 'isOrderPorterApproved' },
               { name: 'Is Quote Demand', value: 'isQuoteDemand' },
@@ -535,8 +535,8 @@ export const quotesFields: INodeProperties[] = [
               { name: 'Quote Notes', value: 'quoteNotes' },
               { name: 'Quote Number', value: 'quoteNumber' },
               { name: 'Quote Preface', value: 'quotePreface' },
-              { name: 'Quote Total', value: 'quoteTotal' },
               { name: 'Quote Status', value: 'quoteStatus' },
+              { name: 'Quote Total', value: 'quoteTotal' },
               { name: 'Quote Type', value: 'quoteType' },
               { name: 'Quote Version', value: 'quoteVersion' },
               { name: 'Recurring Cost', value: 'recurringCost' },
