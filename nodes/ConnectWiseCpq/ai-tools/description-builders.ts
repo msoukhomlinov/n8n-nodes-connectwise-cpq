@@ -37,22 +37,24 @@ function buildOperationLine(operation: string, resourceLabel: string, resource: 
                 `Results include a numeric 'id' on each record — capture it for chained calls.`
             );
         case 'create':
-            return `- create: Create a new ${resourceLabel} record. Provide all required fields as a JSON string.`;
+            return `- create: Create a new ${resourceLabel} record. Provide all required fields as a JSON string. Confirm field values with user before executing when acting autonomously.`;
         case 'update':
             return (
                 `- update: Update an existing ${resourceLabel} record by internal system id (NOT the user-visible quote number). ` +
                 `PREREQUISITE: you need the system id — use getAll with conditions to find it. ` +
-                `Provide updatePatch as JSON array: [{"field":"fieldName","value":"newValue"}].`
+                `Provide updatePatch as JSON array: [{"field":"fieldName","value":"newValue"}]. ` +
+                `Confirm field values with user before executing when acting autonomously.`
             );
         case 'delete':
             return (
                 `- delete: Permanently delete a ${resourceLabel} record by ID. Irreversible. ` +
-                `Confirm the correct ID with getAll first if unsure.`
+                `ONLY on explicit user intent. Do not infer from context. Confirm ID is correct before proceeding.`
             );
         case 'replace':
             return (
                 `- replace: Replace a ${resourceLabel} record by ID (PUT semantics — provide all fields). ` +
-                `PREREQUISITE: numeric ID from a prior getAll.`
+                `PREREQUISITE: numeric ID from a prior getAll. ` +
+                `Confirm field values with user before executing when acting autonomously.`
             );
         case 'copy':
             return (
@@ -70,7 +72,7 @@ function buildOperationLine(operation: string, resourceLabel: string, resource: 
                 `Use this when you know the quote number but not the system id.`
             );
         case 'deleteVersion':
-            return `- deleteVersion: Delete a specific quote version by quoteNumber and quoteVersion.`;
+            return `- deleteVersion: Delete a specific quote version by quoteNumber and quoteVersion. ONLY on explicit user intent. Do not infer from context. Confirm version is correct before proceeding.`;
         case 'getItems':
             return `- getItems: Get all quote items in a specific tab by tab ID.`;
         case 'closeAsLost':

@@ -1,3 +1,22 @@
+## 0.3.1 — 2026-03-13
+
+### Changed
+
+- **AI Tools: Result envelope standard (v2)** — All tool responses now use a unified envelope with `schemaVersion: "1"`, `success` boolean, `resource`, and `operation` fields. Success responses wrap results in `wrapSuccess()`, errors in `wrapError()` with typed `ERROR_TYPES` constants. This gives LLMs a consistent, parseable response shape across all resources and operations.
+- **AI Tools: getAll `results` → `items`** — The `result` field key for listing operations changed from `results` to `items` to align with the envelope standard. MCP clients or cached prompts referencing `results` should update to `items`.
+- **AI Tools: Three-layer write safety enforcement** — Write operations are now blocked with a structured `WRITE_OPERATION_BLOCKED` error in all three execution paths (`supplyData()`, `func()`, `execute()`). Previously, the `execute()` path silently fell back to a default read operation when a write was blocked.
+- **AI Tools: `closeAsLost`, `closeAsNoDecision`, `closeAsWon` classified as write operations** — These PATCH-based operations are now gated by the `allowWriteOperations` toggle (previously they were always exposed regardless of the toggle).
+- **AI Tools: Hardened runtime anchor resolution** — `runtime.ts` now tries an `ANCHOR_CANDIDATES` array (`@langchain/classic/agents`, `langchain/agents`) with fail-fast diagnostics instead of silently falling back to the community node's bundled copy.
+- **AI Tools: MCP tool annotations** — Tools now include `readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint` annotations (future-ready for when n8n/LangChain surface them to MCP clients).
+- **AI Tools: Safety language in descriptions** — `delete`/`deleteVersion` descriptions now include "ONLY on explicit user intent. Do not infer from context." `create`/`update`/`replace` descriptions now include "Confirm field values with user before executing when acting autonomously."
+- **AI Tools: Default case uses `INVALID_OPERATION`** — All executor switch-default cases now return `wrapError(..., ERROR_TYPES.INVALID_OPERATION)` instead of the previous `UNSUPPORTED_OPERATION` flat error.
+
+### Fixed
+
+- **AI Tools: `root` metadata stripping in `execute()` path** — The `execute()` path now strips the n8n-injected `root` canvas UUID from item JSON before passing to the executor. Previously, `root` could leak into API request bodies causing 400 errors.
+
+---
+
 ## 0.3.0 — 2026-03-12
 
 ### Added

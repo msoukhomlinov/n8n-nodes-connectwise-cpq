@@ -8,13 +8,15 @@ import {
 import {
     QUOTE_FIELD_TYPES,
     appendConditions,
-    // isLegacyQuoteId, // TEMPORARILY DISABLED for legacy quote debugging — re-enable when done
 } from '../resources/quotes.resource';
 import { QUOTE_ITEM_FIELD_TYPES } from '../resources/quoteItems.resource';
 import { CUSTOMER_FIELD_TYPES } from '../resources/quoteCustomers.resource';
 import { QUOTE_TERM_FIELD_TYPES } from '../resources/quoteTerms.resource';
 import { USER_FIELD_TYPES } from '../resources/user.resource';
 import {
+    wrapSuccess,
+    wrapError,
+    ERROR_TYPES,
     formatApiError,
     formatMissingIdError,
     formatNotFoundError,
@@ -98,12 +100,12 @@ function getAllResult(
             formatNoResultsFound(resource, operation, { conditions }),
         );
     }
-    const out: Record<string, unknown> = { results: records, count: records.length };
+    const result: Record<string, unknown> = { items: records, count: records.length };
     if (records.length >= limit) {
-        out.truncated = true;
-        out.note = `Results capped at ${limit}. Use conditions to narrow or increase 'limit' (max 1000).`;
+        result.truncated = true;
+        result.note = `Results capped at ${limit}. Use conditions to narrow or increase 'limit' (max 1000).`;
     }
-    return JSON.stringify(out);
+    return JSON.stringify(wrapSuccess(resource, operation, result));
 }
 
 // ── Per-resource executors ─────────────────────────────────────────────────
@@ -170,7 +172,7 @@ async function executeQuotes(
             if (isMissing(result)) {
                 return JSON.stringify(formatNotFoundError('quotes', operation, quoteId));
             }
-            return JSON.stringify({ result });
+            return JSON.stringify(wrapSuccess('quotes', operation, result));
         }
         case 'copy': {
             const quoteId = params.quoteId as string | undefined;
@@ -178,48 +180,30 @@ async function executeQuotes(
             const result = await cpqApiRequest.call(
                 ctx, 'POST', `/api/quotes/copyById/${encodeURIComponent(quoteId)}`,
             );
-            return JSON.stringify({ success: true, operation, result });
+            return JSON.stringify(wrapSuccess('quotes', operation, result));
         }
         case 'delete': {
             const quoteId = params.quoteId as string | undefined;
             if (!quoteId) return JSON.stringify(formatMissingIdError('quotes', operation));
-            // TEMPORARILY DISABLED for legacy quote debugging — re-enable when done
-            // if (isLegacyQuoteId(quoteId)) return JSON.stringify({
-            //     error: true, errorType: 'LEGACY_QUOTE_ID',
-            //     message: `Quote ID "${quoteId}" uses the legacy UUID format and cannot be modified via the API. Only quotes with the newer alphanumeric ID format (e.g. q639088936162812241alWXeGX) support write operations.`,
-            //     nextAction: 'Skip this quote or perform the action manually in the CPQ UI.',
-            // });
             await cpqApiRequest.call(ctx, 'DELETE', `/api/quotes/${encodeURIComponent(quoteId)}`);
-            return JSON.stringify({ success: true, operation, result: { quoteId, deleted: true } });
+            return JSON.stringify(wrapSuccess('quotes', operation, { quoteId, deleted: true }));
         }
         case 'update': {
             const quoteId = params.quoteId as string | undefined;
             if (!quoteId) return JSON.stringify(formatMissingIdError('quotes', operation));
-            // TEMPORARILY DISABLED for legacy quote debugging — re-enable when done
-            // if (isLegacyQuoteId(quoteId)) return JSON.stringify({
-            //     error: true, errorType: 'LEGACY_QUOTE_ID',
-            //     message: `Quote ID "${quoteId}" uses the legacy UUID format and cannot be modified via the API. Only quotes with the newer alphanumeric ID format (e.g. q639088936162812241alWXeGX) support write operations.`,
-            //     nextAction: 'Skip this quote or perform the action manually in the CPQ UI.',
-            // });
             const updatePatch = params.updatePatch as string | undefined;
             if (!updatePatch) return JSON.stringify(formatMissingIdError('quotes', 'update.updatePatch'));
             const patchBody = buildPatch(ctx, updatePatch, QUOTE_FIELD_TYPES);
             const result = await cpqApiRequest.call(
                 ctx, 'PATCH', `/api/quotes/${encodeURIComponent(quoteId)}`, patchBody,
             );
-            return JSON.stringify({ success: true, operation, result });
+            return JSON.stringify(wrapSuccess('quotes', operation, result));
         }
         case 'closeAsLost':
         case 'closeAsNoDecision':
         case 'closeAsWon': {
             const quoteId = params.quoteId as string | undefined;
             if (!quoteId) return JSON.stringify(formatMissingIdError('quotes', operation));
-            // TEMPORARILY DISABLED for legacy quote debugging — re-enable when done
-            // if (isLegacyQuoteId(quoteId)) return JSON.stringify({
-            //     error: true, errorType: 'LEGACY_QUOTE_ID',
-            //     message: `Quote ID "${quoteId}" uses the legacy UUID format and cannot be modified via the API. Only quotes with the newer alphanumeric ID format (e.g. q639088936162812241alWXeGX) support write operations.`,
-            //     nextAction: 'Skip this quote or perform the action manually in the CPQ UI.',
-            // });
             const closeStatusMap: Record<string, string> = { closeAsLost: 'Lost', closeAsNoDecision: 'No Decision', closeAsWon: 'Won' };
             const status = closeStatusMap[operation];
             const wonOrLostDateRaw = params.wonOrLostDate as string | undefined;
@@ -231,7 +215,6 @@ async function executeQuotes(
             if ((operation === 'closeAsLost' || operation === 'closeAsNoDecision') && params.lostReason) {
                 ops.push({ op: 'replace', path: '/lostReason', value: params.lostReason as string });
             }
-
             if (operation === 'closeAsWon' && params.winForm) {
                 ops.push({ op: 'replace', path: '/winForm', value: params.winForm as string });
             }
@@ -239,7 +222,7 @@ async function executeQuotes(
             const result = await cpqApiRequest.call(
                 ctx, 'PATCH', `/api/quotes/${encodeURIComponent(quoteId)}`, patchBody,
             );
-            return JSON.stringify({ success: true, operation, result });
+            return JSON.stringify(wrapSuccess('quotes', operation, result));
         }
         case 'getVersions': {
             const quoteNumber = params.quoteNumber as number | undefined;
@@ -248,7 +231,7 @@ async function executeQuotes(
                 ctx, 'GET', `/api/quotes/${quoteNumber}/versions`,
             );
             const versions = Array.isArray(result) ? result : [];
-            return JSON.stringify({ results: versions, count: versions.length });
+            return JSON.stringify(wrapSuccess('quotes', operation, { items: versions, count: versions.length }));
         }
         case 'getVersion': {
             const quoteNumber = params.quoteNumber as number | undefined;
@@ -263,7 +246,7 @@ async function executeQuotes(
                     formatNotFoundError('quotes', operation, `${quoteNumber}/v${quoteVersion}`),
                 );
             }
-            return JSON.stringify({ result });
+            return JSON.stringify(wrapSuccess('quotes', operation, result));
         }
         case 'getLatestVersion': {
             const quoteNumber = params.quoteNumber as number | undefined;
@@ -276,7 +259,7 @@ async function executeQuotes(
                     formatNotFoundError('quotes', operation, String(quoteNumber)),
                 );
             }
-            return JSON.stringify({ result });
+            return JSON.stringify(wrapSuccess('quotes', operation, result));
         }
         case 'deleteVersion': {
             const quoteNumber = params.quoteNumber as number | undefined;
@@ -286,16 +269,12 @@ async function executeQuotes(
             await cpqApiRequest.call(
                 ctx, 'DELETE', `/api/quotes/${quoteNumber}/versions/${quoteVersion}`,
             );
-            return JSON.stringify({
-                success: true, operation,
-                result: { quoteNumber, quoteVersion, deleted: true },
-            });
+            return JSON.stringify(wrapSuccess('quotes', operation, { quoteNumber, quoteVersion, deleted: true }));
         }
         default:
-            return JSON.stringify({
-                error: true, errorType: 'UNSUPPORTED_OPERATION',
-                message: `Unsupported operation: ${operation} for resource: quotes`,
-            });
+            return JSON.stringify(wrapError('quotes', operation, ERROR_TYPES.INVALID_OPERATION,
+                `Unsupported operation: ${operation} for resource: quotes`,
+                `Use one of the supported operations for connectwisecpq_quotes.`));
     }
 }
 
@@ -325,27 +304,24 @@ async function executeQuoteItems(
             if (isMissing(result)) {
                 return JSON.stringify(formatNotFoundError('quoteItems', operation, id));
             }
-            return JSON.stringify({ result });
+            return JSON.stringify(wrapSuccess('quoteItems', operation, result));
         }
         case 'create': {
             const bodyJson = params.bodyJson as string | undefined;
             if (!bodyJson) {
-                return JSON.stringify({
-                    error: true, errorType: 'MISSING_REQUIRED_FIELDS',
-                    message: 'bodyJson is required for quoteItems.create.',
-                    operation: 'quoteItems.create',
-                    nextAction: 'Provide bodyJson as a JSON object string with all required QuoteItemView fields.',
-                });
+                return JSON.stringify(wrapError('quoteItems', operation, ERROR_TYPES.MISSING_REQUIRED_FIELD,
+                    'bodyJson is required for quoteItems.create.',
+                    'Provide bodyJson as a JSON object string with all required QuoteItemView fields.'));
             }
             const body = JSON.parse(bodyJson) as IDataObject;
             const result = await cpqApiRequest.call(ctx, 'POST', '/api/quoteItems', body);
-            return JSON.stringify({ success: true, operation, result });
+            return JSON.stringify(wrapSuccess('quoteItems', operation, result));
         }
         case 'delete': {
             const id = params.id as string | undefined;
             if (!id) return JSON.stringify(formatMissingIdError('quoteItems', operation));
             await cpqApiRequest.call(ctx, 'DELETE', `/api/quoteItems/${encodeURIComponent(id)}`);
-            return JSON.stringify({ success: true, operation, result: { id, deleted: true } });
+            return JSON.stringify(wrapSuccess('quoteItems', operation, { id, deleted: true }));
         }
         case 'update': {
             const id = params.id as string | undefined;
@@ -356,13 +332,12 @@ async function executeQuoteItems(
             const result = await cpqApiRequest.call(
                 ctx, 'PATCH', `/api/quoteItems/${encodeURIComponent(id)}`, patchBody,
             );
-            return JSON.stringify({ success: true, operation, result });
+            return JSON.stringify(wrapSuccess('quoteItems', operation, result));
         }
         default:
-            return JSON.stringify({
-                error: true, errorType: 'UNSUPPORTED_OPERATION',
-                message: `Unsupported operation: ${operation} for resource: quoteItems`,
-            });
+            return JSON.stringify(wrapError('quoteItems', operation, ERROR_TYPES.INVALID_OPERATION,
+                `Unsupported operation: ${operation} for resource: quoteItems`,
+                `Use one of the supported operations for connectwisecpq_quoteItems.`));
     }
 }
 
@@ -394,7 +369,7 @@ async function executeQuoteCustomers(
                 ctx, 'DELETE',
                 `/api/quotes/${encodeURIComponent(quoteId)}/customers/${encodeURIComponent(id)}`,
             );
-            return JSON.stringify({ success: true, operation, result: { id, deleted: true } });
+            return JSON.stringify(wrapSuccess('quoteCustomers', operation, { id, deleted: true }));
         }
         case 'replace': {
             const quoteId = params.quoteId as string | undefined;
@@ -408,7 +383,7 @@ async function executeQuoteCustomers(
                 `/api/quotes/${encodeURIComponent(quoteId)}/customers/${encodeURIComponent(id)}`,
                 body,
             );
-            return JSON.stringify({ success: true, operation, result });
+            return JSON.stringify(wrapSuccess('quoteCustomers', operation, result));
         }
         case 'update': {
             const quoteId = params.quoteId as string | undefined;
@@ -423,13 +398,12 @@ async function executeQuoteCustomers(
                 `/api/quotes/${encodeURIComponent(quoteId)}/customers/${encodeURIComponent(id)}`,
                 patchBody,
             );
-            return JSON.stringify({ success: true, operation, result });
+            return JSON.stringify(wrapSuccess('quoteCustomers', operation, result));
         }
         default:
-            return JSON.stringify({
-                error: true, errorType: 'UNSUPPORTED_OPERATION',
-                message: `Unsupported operation: ${operation} for resource: quoteCustomers`,
-            });
+            return JSON.stringify(wrapError('quoteCustomers', operation, ERROR_TYPES.INVALID_OPERATION,
+                `Unsupported operation: ${operation} for resource: quoteCustomers`,
+                `Use one of the supported operations for connectwisecpq_quoteCustomers.`));
     }
 }
 
@@ -459,13 +433,12 @@ async function executeQuoteTabs(
                 {},
                 limit,
             );
-            return JSON.stringify({ results: records, count: records.length });
+            return JSON.stringify(wrapSuccess('quoteTabs', operation, { items: records, count: records.length }));
         }
         default:
-            return JSON.stringify({
-                error: true, errorType: 'UNSUPPORTED_OPERATION',
-                message: `Unsupported operation: ${operation} for resource: quoteTabs`,
-            });
+            return JSON.stringify(wrapError('quoteTabs', operation, ERROR_TYPES.INVALID_OPERATION,
+                `Unsupported operation: ${operation} for resource: quoteTabs`,
+                `Use one of the supported operations for connectwisecpq_quoteTabs.`));
     }
 }
 
@@ -493,12 +466,9 @@ async function executeQuoteTerms(
             if (!quoteId) return JSON.stringify(formatMissingIdError('quoteTerms', 'create.quoteId'));
             const termJson = params.termJson as string | undefined;
             if (!termJson) {
-                return JSON.stringify({
-                    error: true, errorType: 'MISSING_REQUIRED_FIELDS',
-                    message: 'termJson is required for quoteTerms.create.',
-                    operation: 'quoteTerms.create',
-                    nextAction: 'Provide termJson as a JSON object string with all required QuoteTermView fields.',
-                });
+                return JSON.stringify(wrapError('quoteTerms', operation, ERROR_TYPES.MISSING_REQUIRED_FIELD,
+                    'termJson is required for quoteTerms.create.',
+                    'Provide termJson as a JSON object string with all required QuoteTermView fields.'));
             }
             const body = JSON.parse(termJson) as IDataObject;
             const result = await cpqApiRequest.call(
@@ -506,7 +476,7 @@ async function executeQuoteTerms(
                 `/api/quotes/${encodeURIComponent(quoteId)}/quoteTerms`,
                 body,
             );
-            return JSON.stringify({ success: true, operation, result });
+            return JSON.stringify(wrapSuccess('quoteTerms', operation, result));
         }
         case 'delete': {
             const quoteId = params.quoteId as string | undefined;
@@ -517,7 +487,7 @@ async function executeQuoteTerms(
                 ctx, 'DELETE',
                 `/api/quotes/${encodeURIComponent(quoteId)}/quoteTerms/${encodeURIComponent(id)}`,
             );
-            return JSON.stringify({ success: true, operation, result: { id, deleted: true } });
+            return JSON.stringify(wrapSuccess('quoteTerms', operation, { id, deleted: true }));
         }
         case 'update': {
             const quoteId = params.quoteId as string | undefined;
@@ -532,13 +502,12 @@ async function executeQuoteTerms(
                 `/api/quotes/${encodeURIComponent(quoteId)}/quoteTerms/${encodeURIComponent(id)}`,
                 patchBody,
             );
-            return JSON.stringify({ success: true, operation, result });
+            return JSON.stringify(wrapSuccess('quoteTerms', operation, result));
         }
         default:
-            return JSON.stringify({
-                error: true, errorType: 'UNSUPPORTED_OPERATION',
-                message: `Unsupported operation: ${operation} for resource: quoteTerms`,
-            });
+            return JSON.stringify(wrapError('quoteTerms', operation, ERROR_TYPES.INVALID_OPERATION,
+                `Unsupported operation: ${operation} for resource: quoteTerms`,
+                `Use one of the supported operations for connectwisecpq_quoteTerms.`));
     }
 }
 
@@ -575,13 +544,12 @@ async function executeUserResource(
             const result = await cpqApiRequest.call(
                 ctx, 'PATCH', `/settings/user/${encodeURIComponent(userId)}`, patchBody,
             );
-            return JSON.stringify({ success: true, operation, result });
+            return JSON.stringify(wrapSuccess('user', operation, result));
         }
         default:
-            return JSON.stringify({
-                error: true, errorType: 'UNSUPPORTED_OPERATION',
-                message: `Unsupported operation: ${operation} for resource: user`,
-            });
+            return JSON.stringify(wrapError('user', operation, ERROR_TYPES.INVALID_OPERATION,
+                `Unsupported operation: ${operation} for resource: user`,
+                `Use one of the supported operations for connectwisecpq_user.`));
     }
 }
 
@@ -629,11 +597,9 @@ export async function executeAiTool(
             case 'user':
                 return await executeUserResource(ctx, operation, params);
             default:
-                return JSON.stringify({
-                    error: true,
-                    errorType: 'UNKNOWN_RESOURCE',
-                    message: `Unknown resource: ${resource}`,
-                });
+                return JSON.stringify(wrapError(resource, operation, ERROR_TYPES.INVALID_OPERATION,
+                    `Unknown resource: ${resource}`,
+                    'Check available resources and retry.'));
         }
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);

@@ -1,5 +1,6 @@
 import type { DynamicStructuredTool } from '@langchain/core/tools';
 import type { z as ZodNamespace } from 'zod';
+import { createRequire } from 'module';
 
 type DynamicStructuredToolCtor = new (fields: {
     name: string;
@@ -10,20 +11,40 @@ type DynamicStructuredToolCtor = new (fields: {
 
 export type RuntimeZod = typeof ZodNamespace;
 
-function getRuntimeRequire(): NodeRequire {
-    // Anchor: @langchain/classic/agents — always present in n8n's dependency tree.
-    // NOTE: if n8n drops @langchain/classic in a future version, update this anchor
-    // to another package in n8n's tree that depends on @langchain/core.
+// ── Hardened anchor resolution ────────────────────────────────────────────
+// Community nodes bundle their own zod and @langchain/core. At runtime, n8n
+// loads its own copies. JavaScript instanceof fails across module copies.
+// We resolve both classes from n8n's module tree using createRequire(),
+// anchored to a candidate list tried in order.
+
+const ANCHOR_CANDIDATES = [
+    '@langchain/classic/agents',  // primary: stable in n8n ≥ 2.4.x
+    'langchain/agents',           // secondary: fallback
+];
+
+let runtimeRequire: NodeRequire | null = null;
+const errors: string[] = [];
+
+for (const candidate of ANCHOR_CANDIDATES) {
     try {
-        const classicAgentsPath = require.resolve('@langchain/classic/agents');
-        const { createRequire } = require('module') as { createRequire: (filename: string) => NodeRequire };
-        return createRequire(classicAgentsPath);
-    } catch {
-        return require;
+        const resolved = require.resolve(candidate);
+        runtimeRequire = createRequire(resolved);
+        break;
+    } catch (e) {
+        errors.push(`${candidate}: ${(e as Error).message}`);
     }
 }
 
-const runtimeRequire = getRuntimeRequire();
+if (!runtimeRequire) {
+    throw new Error(
+        `[runtime.ts] Could not resolve LangChain anchor. Tried:\n${errors.join('\n')}\n` +
+        'Ensure @n8n/nodes-langchain is installed in n8n\'s node_modules.',
+    );
+}
+
+// NOTE: require.resolve() works here because n8n loads community nodes within
+// its own module resolution context — community node packages share n8n's
+// node_modules tree.
 
 const coreTools = runtimeRequire('@langchain/core/tools') as Record<string, unknown>;
 export const RuntimeDynamicStructuredTool = coreTools['DynamicStructuredTool'] as DynamicStructuredToolCtor;

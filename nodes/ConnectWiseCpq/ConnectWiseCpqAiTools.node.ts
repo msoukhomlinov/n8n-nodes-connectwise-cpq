@@ -12,6 +12,7 @@ import type {
     SupplyData,
 } from 'n8n-workflow';
 import { executeAiTool } from './ai-tools/tool-executor';
+import { wrapError, ERROR_TYPES } from './ai-tools/error-formatter';
 import { buildUnifiedDescription, OPERATION_LABELS } from './ai-tools/description-builders';
 import { getRuntimeSchemaBuilders } from './ai-tools/schema-generator';
 import { RuntimeDynamicStructuredTool, runtimeZod } from './ai-tools/runtime';
@@ -24,7 +25,7 @@ const runtimeSchemas = getRuntimeSchemaBuilders(runtimeZod);
 const RESOURCE_OPERATIONS: Record<string, { label: string; ops: string[] }> = {
     quotes: {
         label: 'Quote',
-        ops: ['getAll', 'get', 'copy', 'delete', 'deleteVersion', 'getLatestVersion', 'getVersion', 'getVersions', 'update'],
+        ops: ['getAll', 'get', 'copy', 'delete', 'deleteVersion', 'getLatestVersion', 'getVersion', 'getVersions', 'update', 'closeAsLost', 'closeAsNoDecision', 'closeAsWon'],
     },
     quoteItems: {
         label: 'Quote Item',
@@ -62,21 +63,10 @@ const RESOURCE_OPERATIONS: Record<string, { label: string; ops: string[] }> = {
 
 const WRITE_OPERATIONS = new Set([
     'create', 'update', 'delete', 'replace', 'copy', 'deleteVersion',
-]);
-
-// Fields stripped from execute() item.json before passing to executeAiTool
-const EXECUTE_METADATA_FIELDS = new Set([
-    'resource', 'operation', 'tool', 'toolName', 'toolCallId',
-    'sessionId', 'action', 'chatInput',
+    'closeAsLost', 'closeAsNoDecision', 'closeAsWon',
 ]);
 
 // ── Helpers ────────────────────────────────────────────────────────────────
-
-function getDefaultOperation(operations: string[]): string {
-    if (operations.includes('getAll')) return 'getAll';
-    if (operations.includes('get')) return 'get';
-    return operations[0] ?? '';
-}
 
 function parseToolResult(resultJson: string): IDataObject {
     try {
@@ -84,14 +74,6 @@ function parseToolResult(resultJson: string): IDataObject {
     } catch {
         return { error: resultJson };
     }
-}
-
-function stripExecuteMetadata(params: Record<string, unknown>): Record<string, unknown> {
-    const cleaned: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(params)) {
-        if (!EXECUTE_METADATA_FIELDS.has(key)) cleaned[key] = value;
-    }
-    return cleaned;
 }
 
 // ── Node class ─────────────────────────────────────────────────────────────
@@ -138,7 +120,7 @@ export class ConnectWiseCpqAiTools implements INodeType {
                 name: 'allowWriteOperations',
                 type: 'boolean',
                 default: false,
-                description: 'Whether to enable mutating operations (create, update, delete, replace, copy, deleteVersion). Disabled = read-only tools.',
+                description: 'Whether to enable mutating operations (create, update, delete, replace, copy, deleteVersion, closeAs*). Disabled = read-only tools.',
             },
         ],
     };
@@ -198,12 +180,13 @@ export class ConnectWiseCpqAiTools implements INodeType {
             throw new NodeOperationError(this.getNode(), `Unknown resource: ${resource}`);
         }
 
-        const enabledOperations = operations.filter((op) => {
+        // Layer 1: Filter effectiveOps — excludes writes when allowWriteOperations=false
+        const effectiveOps = operations.filter((op) => {
             if (WRITE_OPERATIONS.has(op) && !allowWriteOperations) return false;
             return config.ops.includes(op);
         });
 
-        if (enabledOperations.length === 0) {
+        if (effectiveOps.length === 0) {
             throw new NodeOperationError(
                 this.getNode(),
                 'No operations to expose. Select at least one operation, and enable "Allow Write Operations" if needed.',
@@ -211,13 +194,20 @@ export class ConnectWiseCpqAiTools implements INodeType {
         }
 
         const referenceUtc = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
-        const unifiedSchema = runtimeSchemas.buildUnifiedSchema(resource, enabledOperations);
+        const unifiedSchema = runtimeSchemas.buildUnifiedSchema(resource, effectiveOps);
         const unifiedDescription = buildUnifiedDescription(
-            config.label, resource, enabledOperations, referenceUtc,
+            config.label, resource, effectiveOps, referenceUtc,
+        );
+
+        // Determine MCP annotation hints based on effective operations
+        const hasWriteOps = effectiveOps.some((op) => WRITE_OPERATIONS.has(op));
+        const hasDestructiveOps = effectiveOps.some((op) =>
+            op === 'delete' || op === 'deleteVersion',
         );
 
         const self = this;
 
+        // Tool name: connectwisecpq_{resource} — complies with MCP regex ^[a-zA-Z0-9_-]{1,128}$
         const unifiedTool = new RuntimeDynamicStructuredTool({
             name: `connectwisecpq_${resource}`,
             description: unifiedDescription,
@@ -226,21 +216,38 @@ export class ConnectWiseCpqAiTools implements INodeType {
                 const operationFromArgs = params.operation;
                 const operation = typeof operationFromArgs === 'string' ? operationFromArgs : undefined;
 
-                if (!operation || !enabledOperations.includes(operation)) {
-                    return JSON.stringify({
-                        error: true,
-                        errorType: 'INVALID_OPERATION',
-                        message: 'Missing or unsupported operation for this tool call.',
-                        providedOperation: operationFromArgs ?? null,
-                        allowedOperations: enabledOperations,
-                    });
+                // Layer 2 (func path): Re-check operation against effectiveOps
+                if (!operation || !effectiveOps.includes(operation)) {
+                    // Check if it's a write-blocked operation specifically
+                    if (operation && WRITE_OPERATIONS.has(operation) && !allowWriteOperations) {
+                        return JSON.stringify(wrapError(
+                            resource, operation, ERROR_TYPES.WRITE_OPERATION_BLOCKED,
+                            'Write operations are disabled for this tool.',
+                            'Enable allowWriteOperations on the ConnectWise CPQ AI Tools node to use mutating operations.',
+                        ));
+                    }
+                    return JSON.stringify(wrapError(
+                        resource, operation ?? 'unknown', ERROR_TYPES.INVALID_OPERATION,
+                        'Missing or unsupported operation for this tool call.',
+                        `Use one of: ${effectiveOps.join(', ')}.`,
+                        { providedOperation: operationFromArgs ?? null, allowedOperations: effectiveOps },
+                    ));
                 }
 
-                // Strip operation before passing to executor (it handles stripping internally)
+                // Strip operation before passing to executor
                 const { operation: _op, ...operationParams } = params;
                 return executeAiTool(self, resource, operation, operationParams);
             },
         });
+
+        // MCP tool annotations (future-ready — applied when n8n/LangChain support lands)
+        const toolWithAnnotations = unifiedTool as any;
+        toolWithAnnotations.annotations = {
+            readOnlyHint: !hasWriteOps,
+            destructiveHint: hasDestructiveOps,
+            idempotentHint: !effectiveOps.includes('create'),
+            openWorldHint: true,
+        };
 
         return { response: unifiedTool };
     }
@@ -282,12 +289,37 @@ export class ConnectWiseCpqAiTools implements INodeType {
             if (!item) continue;
 
             const requestedOp = item.json.operation as string | undefined;
-            const defaultOp = getDefaultOperation(effectiveOps);
+
+            // Layer 3 (execute path): Write-block guard — returns structured error, not silent fallback
+            if (requestedOp && WRITE_OPERATIONS.has(requestedOp) && !allowWriteOperations) {
+                response.push({
+                    json: parseToolResult(JSON.stringify(wrapError(
+                        resource, requestedOp, ERROR_TYPES.WRITE_OPERATION_BLOCKED,
+                        'Write operations are disabled.',
+                        'Enable allowWriteOperations on this node to use mutating operations.',
+                    ))),
+                    pairedItem: { item: itemIndex },
+                });
+                continue;
+            }
+
+            // Validate operation is in effectiveOps; fall back to getAll only for missing/unknown ops
             const effectiveOp =
-                requestedOp && effectiveOps.includes(requestedOp) ? requestedOp : defaultOp;
+                requestedOp && effectiveOps.includes(requestedOp)
+                    ? requestedOp
+                    : effectiveOps.includes('getAll') ? 'getAll' : effectiveOps[0] ?? '';
 
             try {
-                const params = stripExecuteMetadata(item.json as Record<string, unknown>);
+                // Strip n8n metadata fields before passing to executor
+                const rawJson = item.json as Record<string, unknown>;
+                const params: Record<string, unknown> = {};
+                for (const [key, value] of Object.entries(rawJson)) {
+                    // N8N_METADATA_FIELDS equivalent for execute path
+                    if (!['resource', 'operation', 'tool', 'toolName', 'toolCallId',
+                        'sessionId', 'action', 'chatInput', 'root'].includes(key)) {
+                        params[key] = value;
+                    }
+                }
                 const resultJson = await executeAiTool(
                     this as unknown as ISupplyDataFunctions,
                     resource,
