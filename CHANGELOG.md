@@ -1,3 +1,13 @@
+## 0.4.1 — 2026-03-16
+
+### Fixed
+
+- Added missing codex metadata files (`ConnectWiseCpq.node.json`, `ConnectWiseCpqAiTools.node.json`)
+- Removed duplicate `sourceMap` key in `tsconfig.json`
+- Removed unused Prettier dependency and `format` script
+
+---
+
 ## 0.4.0 — 2026-03-13
 
 ### Breaking Changes

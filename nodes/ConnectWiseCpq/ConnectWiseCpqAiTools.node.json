@@ -1,0 +1,18 @@
+{
+	"node": "n8n-nodes-base.connectWiseCpqAiTools",
+	"nodeVersion": "1.0",
+	"codexVersion": "1.0",
+	"categories": ["Sales"],
+	"resources": {
+		"credentialDocumentation": [
+			{
+				"url": "https://developer.connectwise.com/Products/ConnectWise_CPQ/REST"
+			}
+		],
+		"primaryDocumentation": [
+			{
+				"url": "https://github.com/msoukhomlinov/n8n-nodes-connectwise-cpq#readme"
+			}
+		]
+	}
+}
