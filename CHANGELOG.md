@@ -1,3 +1,33 @@
+## 0.4.0 — 2026-03-13
+
+### Breaking Changes
+
+- **Removed `expiredOnly` toggle from Quotes getAll** — Existing workflows using this parameter must replace it with a date filter row on `expirationDate` using the "Before Date" preset (or "On Date" for exact matches). This was removed because the new date presets make it redundant.
+
+### Added
+
+- **Date presets for filters** — When Value Type is set to "Date", the Operator and Value fields are replaced by a Date Preset dropdown with 34 options:
+  - **Exact day:** Today, Yesterday, Tomorrow
+  - **Past rolling windows:** Last 7/14/30/45/60/90/120/180 Days
+  - **Past calendar periods:** This Week, Last Week, This Month, Last Month, This Quarter, Last Quarter, This Year, Last Year
+  - **Future rolling windows:** Next 7/14/30/45/60/90/120/180 Days
+  - **Future calendar periods:** Next Week, Next Month, Next Quarter
+  - **Custom:** On Date, Before Date, After Date, Custom Range (with date pickers)
+  - All presets resolve at execution time relative to today. Multi-fragment presets (ranges) are AND-grouped and wrapped in parentheses when the filter combinator is OR.
+- **`resolveDatePreset()` helper** in `GenericFunctions.ts` — date arithmetic engine with helpers for week/month/quarter/year boundaries (Monday-based ISO weeks).
+
+### Changed
+
+- **Filter combinator renamed** — "Filter Combinator" → "Combine Filters Using" and moved to appear after the Filters block instead of before it.
+- **Filter notice simplified** — Reduced to a single sentence pointing users to use filters and noting the reference field syntax.
+
+### Internal
+
+- `buildFiltersFromUi()` extended with date preset branch — checks for `datePreset` on datetime rows, calls `resolveDatePreset()`, falls through to legacy operator+value path when `datePreset` is absent (backward compatible).
+- Date arithmetic helpers added to `GenericFunctions.ts`: `formatDateOnly`, `addDays`, `startOfWeek`, `endOfWeek`, `startOfMonth`, `endOfMonth`, `startOfQuarter`, `endOfQuarter`.
+
+---
+
 ## 0.3.1 — 2026-03-13
 
 ### Changed

@@ -205,7 +205,179 @@ export function prepareJsonPatch(
   });
 }
 
-/** Build a CPQ conditions string from the new `filters` fixedCollection UI. */
+// ---------------------------------------------------------------------------
+// Date arithmetic helpers (private)
+// ---------------------------------------------------------------------------
+
+function formatDateOnly(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function addDays(date: Date, n: number): Date {
+  const result = new Date(date);
+  result.setDate(result.getDate() + n);
+  return result;
+}
+
+function startOfWeek(date: Date): Date {
+  const result = new Date(date);
+  const day = result.getDay(); // 0=Sun
+  const diff = day === 0 ? -6 : 1 - day; // Monday-based ISO week
+  result.setDate(result.getDate() + diff);
+  return result;
+}
+
+function endOfWeek(date: Date): Date {
+  const mon = startOfWeek(date);
+  return addDays(mon, 6); // Sunday
+}
+
+function startOfMonth(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function endOfMonth(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0);
+}
+
+function startOfQuarter(date: Date): Date {
+  const q = Math.floor(date.getMonth() / 3);
+  return new Date(date.getFullYear(), q * 3, 1);
+}
+
+function endOfQuarter(date: Date): Date {
+  const q = Math.floor(date.getMonth() / 3);
+  return new Date(date.getFullYear(), q * 3 + 3, 0);
+}
+
+// ---------------------------------------------------------------------------
+// resolveDatePreset — converts a date preset into condition fragments
+// ---------------------------------------------------------------------------
+
+export interface DateFragment {
+  operator: string;
+  value: string; // already in [YYYY-MM-DD] bracket format
+}
+
+export function resolveDatePreset(
+  preset: string,
+  dateValue?: string,
+  dateRangeStart?: string,
+  dateRangeEnd?: string,
+): { fragments: DateFragment[] } {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const bracket = (d: Date) => `[${formatDateOnly(d)}]`;
+
+  // Helper: single-value range (>=start AND <=end)
+  const range = (start: Date, end: Date): { fragments: DateFragment[] } => ({
+    fragments: [
+      { operator: '>=', value: bracket(start) },
+      { operator: '<=', value: bracket(end) },
+    ],
+  });
+
+  // Helper: single exact match
+  const exact = (d: Date): { fragments: DateFragment[] } => ({
+    fragments: [{ operator: '=', value: bracket(d) }],
+  });
+
+  switch (preset) {
+    // --- Exact Day ---
+    case 'today':       return exact(today);
+    case 'yesterday':   return exact(addDays(today, -1));
+    case 'tomorrow':    return exact(addDays(today, 1));
+
+    // --- Past Rolling ---
+    case 'last7days':   return range(addDays(today, -7), today);
+    case 'last14days':  return range(addDays(today, -14), today);
+    case 'last30days':  return range(addDays(today, -30), today);
+    case 'last45days':  return range(addDays(today, -45), today);
+    case 'last60days':  return range(addDays(today, -60), today);
+    case 'last90days':  return range(addDays(today, -90), today);
+    case 'last120days': return range(addDays(today, -120), today);
+    case 'last180days': return range(addDays(today, -180), today);
+
+    // --- Past Calendar ---
+    case 'thisWeek':    return range(startOfWeek(today), endOfWeek(today));
+    case 'lastWeek': {
+      const prevMon = addDays(startOfWeek(today), -7);
+      return range(prevMon, addDays(prevMon, 6));
+    }
+    case 'thisMonth':   return range(startOfMonth(today), endOfMonth(today));
+    case 'lastMonth': {
+      const prev = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      return range(startOfMonth(prev), endOfMonth(prev));
+    }
+    case 'thisQuarter': return range(startOfQuarter(today), endOfQuarter(today));
+    case 'lastQuarter': {
+      const prev = new Date(today.getFullYear(), today.getMonth() - 3, 1);
+      return range(startOfQuarter(prev), endOfQuarter(prev));
+    }
+    case 'thisYear':    return range(new Date(today.getFullYear(), 0, 1), new Date(today.getFullYear(), 11, 31));
+    case 'lastYear':    return range(new Date(today.getFullYear() - 1, 0, 1), new Date(today.getFullYear() - 1, 11, 31));
+
+    // --- Future Rolling ---
+    case 'next7days':   return range(today, addDays(today, 7));
+    case 'next14days':  return range(today, addDays(today, 14));
+    case 'next30days':  return range(today, addDays(today, 30));
+    case 'next45days':  return range(today, addDays(today, 45));
+    case 'next60days':  return range(today, addDays(today, 60));
+    case 'next90days':  return range(today, addDays(today, 90));
+    case 'next120days': return range(today, addDays(today, 120));
+    case 'next180days': return range(today, addDays(today, 180));
+
+    // --- Future Calendar ---
+    case 'nextWeek': {
+      const nextMon = addDays(startOfWeek(today), 7);
+      return range(nextMon, addDays(nextMon, 6));
+    }
+    case 'nextMonth': {
+      const next = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+      return range(startOfMonth(next), endOfMonth(next));
+    }
+    case 'nextQuarter': {
+      const next = new Date(today.getFullYear(), today.getMonth() + 3, 1);
+      return range(startOfQuarter(next), endOfQuarter(next));
+    }
+
+    // --- Custom ---
+    case 'onDate': {
+      const d = dateValue ? dateValue.match(/^(\d{4}-\d{2}-\d{2})/)?.[1] : undefined;
+      if (!d) return { fragments: [] };
+      return { fragments: [{ operator: '=', value: `[${d}]` }] };
+    }
+    case 'beforeDate': {
+      const d = dateValue ? dateValue.match(/^(\d{4}-\d{2}-\d{2})/)?.[1] : undefined;
+      if (!d) return { fragments: [] };
+      return { fragments: [{ operator: '<', value: `[${d}]` }] };
+    }
+    case 'afterDate': {
+      const d = dateValue ? dateValue.match(/^(\d{4}-\d{2}-\d{2})/)?.[1] : undefined;
+      if (!d) return { fragments: [] };
+      return { fragments: [{ operator: '>', value: `[${d}]` }] };
+    }
+    case 'customRange': {
+      const s = dateRangeStart ? dateRangeStart.match(/^(\d{4}-\d{2}-\d{2})/)?.[1] : undefined;
+      const e = dateRangeEnd ? dateRangeEnd.match(/^(\d{4}-\d{2}-\d{2})/)?.[1] : undefined;
+      if (!s || !e) return { fragments: [] };
+      return { fragments: [{ operator: '>=', value: `[${s}]` }, { operator: '<=', value: `[${e}]` }] };
+    }
+
+    default:
+      return { fragments: [] };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// buildFiltersFromUi — builds a CPQ conditions string from the filter UI
+// ---------------------------------------------------------------------------
+
+/** Build a CPQ conditions string from the `filters` fixedCollection UI. */
 export function buildFiltersFromUi(
   filters: {
     conditions?: Array<{
@@ -213,6 +385,10 @@ export function buildFiltersFromUi(
       operator?: string;
       valueType?: string;
       value?: string;
+      datePreset?: string;
+      dateValue?: string;
+      dateRangeStart?: string;
+      dateRangeEnd?: string;
     }>;
   } | undefined,
   logic: 'and' | 'or' = 'and',
@@ -226,8 +402,31 @@ export function buildFiltersFromUi(
       const fieldName = (row.field ?? '').trim();
       if (!fieldName) continue;
 
-      const operator = (row.operator ?? '=').toLowerCase();
       const valueType = row.valueType ?? 'string';
+
+      // --- Date preset path ---
+      if (valueType === 'datetime' && row.datePreset) {
+        const { fragments } = resolveDatePreset(
+          row.datePreset,
+          row.dateValue,
+          row.dateRangeStart,
+          row.dateRangeEnd,
+        );
+        if (fragments.length === 0) continue;
+
+        if (fragments.length === 1) {
+          parts.push(`${fieldName} ${fragments[0].operator} ${fragments[0].value}`);
+        } else {
+          // Multi-fragment (range) — group with AND; wrap in parens when OR combinator
+          const rangeParts = fragments.map((f) => `${fieldName} ${f.operator} ${f.value}`);
+          const rangeExpr = rangeParts.join(' AND ');
+          parts.push(logic === 'or' ? `(${rangeExpr})` : rangeExpr);
+        }
+        continue;
+      }
+
+      // --- Legacy operator + value path (backward compat) ---
+      const operator = (row.operator ?? '=').toLowerCase();
       const rawValue = (row.value ?? '').trim();
       const isListOperator = operator === 'in' || operator === 'not in';
 

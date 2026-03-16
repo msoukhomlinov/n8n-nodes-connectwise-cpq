@@ -334,14 +334,6 @@ export const quotesFields: INodeProperties[] = [
     description: 'Filter by quote status. "Active" means open/in-play. Closed options filter by a specific outcome. "All Closed" matches any non-Active status.',
   },
   {
-    displayName: 'Expired Only',
-    name: 'expiredOnly',
-    type: 'boolean',
-    displayOptions: { show: { resource: ['quotes'], operation: ['getAll'] } },
-    default: false,
-    description: 'Whether to return only quotes whose expiration date is in the past. Most useful combined with Quote Status = Active.',
-  },
-  {
     displayName: 'ID Format',
     name: 'idFormat',
     type: 'options',
@@ -653,7 +645,7 @@ export async function executeQuotes(
     const pageSize = this.getNodeParameter('pageSize', i, 50) as number;
     const limit = this.getNodeParameter('limit', i, 100) as number;
     const filters = this.getNodeParameter('filters', i, {}) as {
-      conditions?: Array<{ field?: string; operator?: string; valueType?: string; value?: string }>;
+      conditions?: Array<{ field?: string; operator?: string; valueType?: string; value?: string; datePreset?: string; dateValue?: string; dateRangeStart?: string; dateRangeEnd?: string }>;
     };
     const filterLogic = this.getNodeParameter('filterLogic', i, 'and') as 'and' | 'or';
     const additionalOptions = this.getNodeParameter('additionalOptions', i, {}) as { rawConditions?: string };
@@ -662,7 +654,6 @@ export async function executeQuotes(
     const includeFields = Array.isArray(includeFieldsRaw) ? includeFieldsRaw.join(',') : includeFieldsRaw;
     const showAllVersions = this.getNodeParameter('showAllVersions', i, false) as boolean;
     const quoteStatus = this.getNodeParameter('quoteStatus', i, 'all') as string;
-    const expiredOnly = this.getNodeParameter('expiredOnly', i, false) as boolean;
     const idFormat = this.getNodeParameter('idFormat', i, 'all') as string;
 
     const extraParts: string[] = [];
@@ -679,10 +670,6 @@ export async function executeQuotes(
       };
       const apiValue = statusValueMap[quoteStatus];
       if (apiValue) extraParts.push(`quoteStatus = "${apiValue}"`);
-    }
-    if (expiredOnly) {
-      const today = new Date().toISOString().split('T')[0];
-      extraParts.push(`expirationDate < [${today}]`);
     }
     // Push ID format filter server-side so it applies before pagination.
     // New-format IDs start with 'q'; UUID IDs use hex chars (0-9, a-f) which sort before 'q'.
