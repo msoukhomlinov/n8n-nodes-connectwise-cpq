@@ -1,3 +1,16 @@
+## 0.4.2 — 2026-04-02
+
+### Verified
+
+- Audited AI Tools node against updated n8n AI Tools standards (April 2026)
+- Confirmed compliance: 3-layer write safety, envelope standard, metadata stripping (all 8 fields), null/empty guards, MCP tool naming, Zod `.describe()` coverage, dual-path `execute()` dispatch, module-level `getRuntimeSchemaBuilders()`, anchor candidates
+
+### No changes required
+
+- All structural, schema, description, and cross-reference checks passed
+
+---
+
 ## 0.4.1 — 2026-03-16
 
 ### Fixed
