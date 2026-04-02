@@ -1,3 +1,11 @@
+## 0.4.3 — 2026-04-02
+
+### Fixed
+
+- Strip `Prompt__*` framework keys injected by Agent Tool Node v3 (n8n ≥1.116) in the `execute()` path; these leaked into field validation and caused INVALID_WRITE_FIELDS errors on write operations
+
+---
+
 ## 0.4.2 — 2026-04-02
 
 ### Verified

@@ -36,6 +36,9 @@ const N8N_METADATA_FIELDS = new Set([
     'operation',  // unified tool routing field — must not reach API
 ]);
 
+// Agent Tool Node v3 (n8n ≥1.116) injects $fromAI()-generated keys with this prefix into item.json
+const N8N_METADATA_PREFIXES = ['Prompt__'];
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function asCtx(context: ISupplyDataFunctions): IExecuteFunctions {
@@ -564,7 +567,9 @@ export async function executeAiTool(
     // Strip n8n framework metadata at entry (covers all code paths)
     const params: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(rawParams)) {
-        if (!N8N_METADATA_FIELDS.has(key)) params[key] = value;
+        if (N8N_METADATA_FIELDS.has(key)) continue;
+        if (N8N_METADATA_PREFIXES.some((p) => key.startsWith(p))) continue;
+        params[key] = value;
     }
 
     // Coerce numeric strings to numbers (LLMs occasionally pass "25" instead of 25)

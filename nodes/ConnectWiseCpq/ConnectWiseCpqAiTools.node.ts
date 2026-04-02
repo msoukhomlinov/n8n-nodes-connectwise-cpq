@@ -313,12 +313,13 @@ export class ConnectWiseCpqAiTools implements INodeType {
                 // Strip n8n metadata fields before passing to executor
                 const rawJson = item.json as Record<string, unknown>;
                 const params: Record<string, unknown> = {};
+                const EXECUTE_META_FIELDS = new Set(['resource', 'operation', 'tool', 'toolName',
+                    'toolCallId', 'sessionId', 'action', 'chatInput', 'root']);
+                const EXECUTE_META_PREFIXES = ['Prompt__']; // Agent Tool Node v3 (n8n ≥1.116)
                 for (const [key, value] of Object.entries(rawJson)) {
-                    // N8N_METADATA_FIELDS equivalent for execute path
-                    if (!['resource', 'operation', 'tool', 'toolName', 'toolCallId',
-                        'sessionId', 'action', 'chatInput', 'root'].includes(key)) {
-                        params[key] = value;
-                    }
+                    if (EXECUTE_META_FIELDS.has(key)) continue;
+                    if (EXECUTE_META_PREFIXES.some((p) => key.startsWith(p))) continue;
+                    params[key] = value;
                 }
                 const resultJson = await executeAiTool(
                     this as unknown as ISupplyDataFunctions,
