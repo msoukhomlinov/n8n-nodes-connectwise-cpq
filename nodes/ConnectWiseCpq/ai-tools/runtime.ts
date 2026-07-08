@@ -146,7 +146,12 @@ function requireFromCachedTree(patterns: readonly RegExp[], id: string): unknown
         for (const pattern of patterns) {
             for (const key of keys) {
                 if (!pattern.test(key)) continue;
-                if (key.includes(OWN_PACKAGE_NAME)) continue;
+                // The anchor module ITSELF must belong to n8n's own tree, not a community node's
+                // nested copy. Another installed community node may have loaded its own bundled
+                // @langchain/core / zod / n8n-workflow, whose cache key also matches these
+                // patterns — createRequire()-ing from there would resolve THAT node's private copy
+                // (wrong ZodType identity) and memoize it. Skip our own tree and any community node.
+                if (key.includes(OWN_PACKAGE_NAME) || isCommunityNodePath(key)) continue;
                 const entry = cache[key];
                 if (!entry?.filename) continue;
                 try {

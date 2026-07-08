@@ -1,3 +1,11 @@
+## 0.4.6 — 2026-07-08
+
+### Fixed
+
+- **Positive-anchor `require.cache` lookup could still select another community node's copy.** The `requireFromCachedTree()` helper added in 0.4.5 excluded only *this* package's cache keys when picking a module to anchor `createRequire()` from. If a different community node had loaded its own bundled `@langchain/core` / `zod` / `n8n-workflow`, that node's cache key also matched the tree patterns, so the helper could `createRequire()` from the community node's nested copy and return (and memoize) the wrong `ZodType` identity — the exact class-identity mismatch the blind-scan fallback already guards against (Codex review, PR #1). The tree-anchor helper now applies the same `isCommunityNodePath()` exclusion, so the anchor module must belong to n8n's own tree.
+
+---
+
 ## 0.4.5 — 2026-07-08
 
 ### Fixed
