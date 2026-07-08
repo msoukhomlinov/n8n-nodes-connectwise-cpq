@@ -1,3 +1,11 @@
+## 0.4.5 — 2026-07-08
+
+### Fixed
+
+- **Runtime `zod`/`@langchain/core` resolution could pick another community node's bundled copy.** The `require.cache` fallback added in 0.4.4 excluded only *this* package's own `zod`; if a different community node had already loaded its own bundled `zod` (or `@langchain/core`), that copy could be returned before n8n's, so the tool schema was built with the wrong `ZodType` identity and could still fail n8n's schema normalisation (Codex review, PR #1). Resolution now **positively anchors** to n8n's own module tree — it requires `zod` / `@langchain/core/tools` from a cached `@n8n/n8n-nodes-langchain` / `n8n-workflow` / `@langchain/classic` module (tying the result to n8n's tree by identity rather than cache iteration order), and the blind-scan fallback now excludes **every** community-node (`n8n-nodes-*`) copy, not just this package's.
+
+---
+
 ## 0.4.4 — 2026-07-08
 
 ### Fixed
