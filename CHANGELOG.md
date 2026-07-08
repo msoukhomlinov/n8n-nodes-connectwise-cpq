@@ -1,3 +1,11 @@
+## 0.4.7 — 2026-07-08
+
+### Fixed
+
+- **Community-node exclusion was ineffective under pnpm's virtual store.** The `isCommunityNodePath()` guard greps the `require.cache` key for an `n8n-nodes-*` segment, but on pnpm installs Node records cache keys as the resolved virtual-store realpath (e.g. `.../.pnpm/zod@3.x/node_modules/zod/...`), which does not encode the dependent package — so a community node's own bundled `zod` / `@langchain/core` is indistinguishable by path from n8n's, and the exclusion silently no-ops there (Codex review, PR #1). Correctness no longer relies on that heuristic: the positive `require.cache` anchor now matches **only** packages that are n8n-owned and never community-bundled (`@n8n/n8n-nodes-langchain`, `@langchain/classic`, `n8n-workflow`, `n8n-core`) and resolves `zod` / `@langchain/core` by walking that package's real dependency graph — independent of store layout and cache order. `@n8n/n8n-nodes-langchain` (the package that runs the `instanceof` checks, and is always loaded before `supplyData()`) is tried first, so this anchor effectively always succeeds. The ambiguous bare `@langchain/core` anchor was dropped, and the zod resolver no longer falls back to the `@langchain/classic` anchor's nested (wrong-tree) zod. `isCommunityNodePath()` is retained only as best-effort defense on the blind-scan last resort.
+
+---
+
 ## 0.4.6 — 2026-07-08
 
 ### Fixed

@@ -110,15 +110,28 @@ function findCachedExports<T>(
     return undefined;
 }
 
-// Path patterns identifying n8n's OWN module trees — used to positively anchor resolution to
-// n8n/@langchain rather than merely excluding this package's own copy. `@langchain/classic` and
-// n8n's bundled `@n8n/n8n-nodes-langchain` are the trees `DynamicStructuredTool` must come from;
-// `n8n-workflow` / `@n8n/n8n-nodes-langchain` share the TOP-LEVEL zod that n8n's
-// normalizeToolSchema does `instanceof ZodType` against.
+// Anchor-package patterns used to POSITIVELY resolve the host copies of zod / @langchain/core.
+//
+// These match ONLY packages that are (a) owned/shipped by n8n and (b) NEVER bundled by a
+// community node, so a cache key matching one of them provably belongs to n8n's own module tree.
+// This is deliberately NOT a `zod` / `@langchain/core` pattern: under pnpm the require.cache key
+// is the resolved virtual-store realpath (e.g. `.../.pnpm/zod@3.x/node_modules/zod/...` or
+// `.../.pnpm/@langchain+core@0.3.x/node_modules/@langchain/core/...`), which does NOT encode the
+// dependent package — so a community node's OWN bundled zod/@langchain/core is indistinguishable
+// by path from n8n's, and any name-based exclusion silently no-ops there. Anchoring off an
+// unambiguous n8n-owned package and `createRequire()`-ing the dependency FROM it sidesteps that
+// entirely: the resolution walks n8n's real dependency graph, landing on n8n's copy regardless of
+// store layout.
+//
+// `@n8n/n8n-nodes-langchain` is first for both deps because it is the package whose
+// `normalizeToolSchema` does the `instanceof ZodType` / `instanceof DynamicStructuredTool` checks,
+// so the copies IT resolves are the canonical ones — and it is ALWAYS resident in require.cache by
+// the time our supplyData() runs (it is what invokes the tool), so this anchor effectively always
+// succeeds in practice. `@langchain/classic` (n8n's, not community-bundled) and n8n-core /
+// n8n-workflow (peerDeps, never bundled by community nodes) are fallbacks.
 const LANGCHAIN_TREE_PATTERNS = [
-    /[\\/]@langchain[\\/]classic[\\/]/,
     /[\\/]@n8n[\\/]n8n-nodes-langchain[\\/]/,
-    /[\\/]@langchain[\\/]core[\\/]/,
+    /[\\/]@langchain[\\/]classic[\\/]/,
 ] as const;
 const ZOD_TREE_PATTERNS = [
     /[\\/]@n8n[\\/]n8n-nodes-langchain[\\/]/,
@@ -127,17 +140,21 @@ const ZOD_TREE_PATTERNS = [
 ] as const;
 
 // A community-node package segment (e.g. `.../n8n-nodes-foo/...`). n8n's own
-// `@n8n/n8n-nodes-langchain` is NOT a community node, so it is explicitly not matched — its
-// bundled deps are a legitimate part of n8n's tree.
+// `@n8n/n8n-nodes-langchain` is NOT a community node, so it is explicitly not matched.
+// NOTE: this is a best-effort heuristic for symlinked / nested-node_modules layouts. Under pnpm's
+// virtual store the realpath does not contain the dependent package name, so this cannot identify
+// a store-resident community copy — correctness there comes from the n8n-owned anchors above, not
+// from this predicate. Kept as defense-in-depth for the blind-scan last resort.
 function isCommunityNodePath(key: string): boolean {
     return /[\\/]n8n-nodes-/.test(key) && !/[\\/]@n8n[\\/]n8n-nodes-/.test(key);
 }
 
-// Requires `id` from the first already-cached module whose key matches one of `patterns` and is
-// not this package's own tree. This POSITIVELY ties resolution to n8n's/@langchain's module tree
-// (recovering the require.main path when require.main is undefined — ESM/queue-mode workers)
-// instead of trusting whatever zod/@langchain copy happens to sit first in require.cache. Returns
-// undefined if nothing matches or every require throws.
+// Requires `id` from the first already-cached module whose key matches one of `patterns` (an
+// n8n-owned anchor package) and is not this package's own tree. Because the anchor packages are
+// never community-bundled, `createRequire()`-ing `id` from the matched module walks n8n's real
+// dependency graph to n8n's copy of `id` — independent of require.cache ordering and of pnpm
+// store-path naming. Also recovers the require.main result when require.main is undefined
+// (ESM/queue-mode workers). Returns undefined if nothing matches or every require throws.
 function requireFromCachedTree(patterns: readonly RegExp[], id: string): unknown | undefined {
     try {
         const cache = require.cache;
@@ -146,11 +163,6 @@ function requireFromCachedTree(patterns: readonly RegExp[], id: string): unknown
         for (const pattern of patterns) {
             for (const key of keys) {
                 if (!pattern.test(key)) continue;
-                // The anchor module ITSELF must belong to n8n's own tree, not a community node's
-                // nested copy. Another installed community node may have loaded its own bundled
-                // @langchain/core / zod / n8n-workflow, whose cache key also matches these
-                // patterns — createRequire()-ing from there would resolve THAT node's private copy
-                // (wrong ZodType identity) and memoize it. Skip our own tree and any community node.
                 if (key.includes(OWN_PACKAGE_NAME) || isCommunityNodePath(key)) continue;
                 const entry = cache[key];
                 if (!entry?.filename) continue;
@@ -227,7 +239,10 @@ function resolveDynamicStructuredTool(): DynamicStructuredToolCtor | undefined {
 function resolveZod(): RuntimeZod | undefined {
     if (_runtimeZod) return _runtimeZod;
 
-    // Three-step resolution, in priority order: require.main → anchor → require.cache scan.
+    // Priority order: require.main → positive n8n-tree cache anchor → blind require.cache scan.
+    // (There is deliberately NO "resolve zod from the @langchain/classic anchor" step: per the
+    // three-module-trees rule, that anchor reaches @langchain/classic's NESTED zod, which fails
+    // n8n's top-level `instanceof ZodType` check. zod must come from n8n's top-level tree.)
     //
     // Primary path: resolve zod starting from n8n's own main entry point's module tree
     // (require.main). For a correctly-installed (non-isolated) setup this lands on n8n's
@@ -262,33 +277,14 @@ function resolveZod(): RuntimeZod | undefined {
         }
     }
 
-    // Secondary path: the existing @langchain/classic / langchain anchor. Same resolve-then-
-    // check exclusion for defense-in-depth consistency — very unlikely to ever resolve into
-    // this package's own tree, but structurally guarded identically to the other two paths.
-    const runtimeReq = getRuntimeRequire();
-    if (runtimeReq) {
-        try {
-            const resolvedPath = runtimeReq.resolve('zod');
-            if (!resolvedPath.includes(OWN_PACKAGE_NAME)) {
-                _runtimeZod = runtimeReq('zod') as RuntimeZod;
-                if (_runtimeZod) {
-                    _zodDiagnostic = 'resolved zod via anchor';
-                    _zodLoadError = null;
-                    return _runtimeZod;
-                }
-            }
-        } catch (e) {
-            _zodLoadError = (e as Error).message;
-        }
-    }
-
-    // Tertiary path (positive anchor): resolve zod from a cached module that is provably part of
+    // Secondary path (positive anchor): resolve zod from a cached module that is provably part of
     // n8n's OWN tree — @n8n/n8n-nodes-langchain (the package whose normalizeToolSchema does the
     // `instanceof ZodType` check), n8n-workflow, or n8n-core. Requiring 'zod' from there lands on
     // n8n's TOP-LEVEL zod (the exact copy the instanceof check uses), recovering the require.main
     // result even when require.main is undefined (ESM/queue-mode). Critically, this does NOT
-    // depend on require.cache iteration order — it ties the candidate to n8n's tree by identity,
-    // so another community node's bundled zod sitting earlier in the cache can never be returned.
+    // depend on require.cache iteration order NOR on pnpm store-path naming — it ties the result
+    // to n8n's tree by walking a known n8n-owned package's real dependency graph, so another
+    // community node's bundled zod can never be returned.
     const viaTree = requireFromCachedTree(ZOD_TREE_PATTERNS, 'zod') as RuntimeZod | undefined;
     if (
         viaTree &&
