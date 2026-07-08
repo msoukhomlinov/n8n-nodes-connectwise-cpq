@@ -1,3 +1,12 @@
+## 0.4.8 — 2026-07-08
+
+### Fixed
+
+- **Removed the blind `require.cache` scan fallback for `zod` / `@langchain/core`.** Under pnpm the cache key is the flat virtual-store realpath, so a scan that takes the first non-self match cannot tell n8n's copy from another community node's and could return a wrong-`ZodType`-identity module — silently corrupting schema normalisation, which is worse than failing (Codex review, PR #1). Resolution now uses only correctness-preserving sources: `require.main`, then a `createRequire()` anchored off an n8n-owned package (`@n8n/n8n-nodes-langchain` / `n8n-workflow` / `n8n-core` / `@langchain/classic`, none ever community-bundled). If both fail, the resolver returns `undefined` and the lazy Proxy throws a clear diagnostic. In practice the anchor always resolves at execution because `@n8n/n8n-nodes-langchain` (which invokes the tool) is always loaded by then.
+- Regenerated `package-lock.json` so its recorded version matches `package.json` (was stale at `0.4.4`).
+
+---
+
 ## 0.4.7 — 2026-07-08
 
 ### Fixed

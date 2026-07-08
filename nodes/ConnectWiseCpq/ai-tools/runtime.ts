@@ -77,39 +77,6 @@ function getRuntimeRequire(): NodeRequire | undefined {
     return undefined;
 }
 
-/**
- * Scans Node's process-global module cache (shared across every node_modules
- * tree in this process, regardless of who loaded what) for an already-loaded
- * module whose resolved path matches `pathPattern`, returning the first
- * match whose exports satisfy `validate`. Must be called lazily (not at
- * module load) — n8n requires node files for registration before any
- * workflow runs, i.e. before langchain/zod are necessarily loaded into cache.
- */
-function findCachedExports<T>(
-    pathPattern: RegExp,
-    validate: (exports: Record<string, unknown>) => T | undefined,
-    excludeKey?: (key: string) => boolean,
-): T | undefined {
-    try {
-        // require.cache is the public, documented CommonJS alias that points at the exact
-        // same underlying object as the internal Module._cache. It is available directly in
-        // CJS module scope (this file compiles to CJS via tsc), so no require('module') needed.
-        const cache = require.cache;
-        if (!cache) return undefined;
-        for (const key of Object.keys(cache)) {
-            if (!pathPattern.test(key)) continue;
-            if (excludeKey && excludeKey(key)) continue;
-            const entry = cache[key];
-            if (!entry) continue;
-            const result = validate(entry.exports as Record<string, unknown>);
-            if (result !== undefined) return result;
-        }
-    } catch (_e) {
-        // best-effort — require.cache introspection is not guaranteed across Node versions
-    }
-    return undefined;
-}
-
 // Anchor-package patterns used to POSITIVELY resolve the host copies of zod / @langchain/core.
 //
 // These match ONLY packages that are (a) owned/shipped by n8n and (b) NEVER bundled by a
@@ -204,33 +171,20 @@ function resolveDynamicStructuredTool(): DynamicStructuredToolCtor | undefined {
     }
 
     // Fallback for pnpm-isolated installs where no filesystem anchor reaches @langchain/core.
-    // It is loaded by n8n's own Agent/MCP Trigger machinery before our supplyData() ever runs.
-    //
-    // Prefer a POSITIVE anchor: require '@langchain/core/tools' from a cached module that is
-    // provably part of n8n's/@langchain's own tree (@langchain/classic, @n8n/n8n-nodes-langchain,
-    // or @langchain/core itself). This avoids picking up a DIFFERENT community node's bundled
-    // @langchain/core copy that merely happens to sit first in require.cache.
+    // Anchor POSITIVELY off a cached n8n-owned package (never community-bundled) and require
+    // '@langchain/core/tools' from there. @n8n/n8n-nodes-langchain — which loads @langchain/core
+    // to run the agent, and is therefore always resident by the time our supplyData() runs — is
+    // tried first, so this effectively always succeeds in a real invocation. If it does not, we
+    // deliberately DO NOT fall back to a blind require.cache scan for a @langchain/core copy:
+    // under pnpm the cache key is the flat virtual-store realpath, so we cannot tell n8n's copy
+    // apart from another community node's, and returning the wrong one would fail n8n's
+    // `instanceof DynamicStructuredTool` silently. Failing here (→ Proxy throws a clear error) is
+    // strictly safer than guessing.
     const viaTree = requireFromCachedTree(LANGCHAIN_TREE_PATTERNS, '@langchain/core/tools') as
         | Record<string, unknown>
         | undefined;
     if (viaTree && typeof viaTree['DynamicStructuredTool'] === 'function') {
         _RuntimeDynamicStructuredTool = viaTree['DynamicStructuredTool'] as DynamicStructuredToolCtor;
-        _langchainLoadError = null;
-        return _RuntimeDynamicStructuredTool;
-    }
-
-    // Last resort: blind require.cache scan for @langchain/core exports, excluding any OTHER
-    // community node's bundled copy (n8n's own @n8n/n8n-nodes-langchain is intentionally allowed).
-    const cached = findCachedExports(
-        /[\\/]@langchain[\\/]core[\\/]/,
-        (exports) =>
-            typeof exports['DynamicStructuredTool'] === 'function'
-                ? (exports['DynamicStructuredTool'] as DynamicStructuredToolCtor)
-                : undefined,
-        isCommunityNodePath,
-    );
-    if (cached) {
-        _RuntimeDynamicStructuredTool = cached;
         _langchainLoadError = null;
     }
     return _RuntimeDynamicStructuredTool;
@@ -297,32 +251,13 @@ function resolveZod(): RuntimeZod | undefined {
         return _runtimeZod;
     }
 
-    // Last resort (blind scan): scan require.cache for an already-resident zod once neither
-    // filesystem resolution nor the positive tree anchor reaches it. The path regex is narrowed
-    // to zod's own entry-point directories (lib/dist/index/v3/v4) so it never matches
-    // zod-adjacent package names (e.g. zod-to-json-schema). Validate the exports look like zod
-    // via `ZodType` (the class n8n's normalizeToolSchema does `instanceof` against) plus the
-    // `object` factory our schema-generator calls.
-    //
-    // Exclusion guard: skip the zod copy bundled inside ANY community node (`.../n8n-nodes-*/`),
-    // not just this package's own. This package declares zod as a REAL dependency and imports it
-    // at registration time (schema-generator.ts), so its own copy is always resident; and OTHER
-    // installed community nodes may have loaded their own bundled zod too. Returning any of these
-    // instead of n8n's would fail n8n's `instanceof ZodType` class-identity check. n8n's own
-    // top-level zod is never under an `n8n-nodes-*` path, so this exclusion cannot drop it.
-    const cached = findCachedExports(
-        /[\\/]zod[\\/](lib|dist|index|v3|v4)/,
-        (exports) =>
-            typeof exports['ZodType'] === 'function' && typeof exports['object'] === 'function'
-                ? (exports as unknown as RuntimeZod)
-                : undefined,
-        (key) => isCommunityNodePath(key) || key.includes(OWN_PACKAGE_NAME),
-    );
-    if (cached) {
-        _runtimeZod = cached;
-        _zodLoadError = null;
-        _zodDiagnostic = 'resolved zod via require.cache scan (pnpm-isolated install)';
-    }
+    // No blind require.cache scan for a bare `zod` entry as a further fallback: under pnpm the
+    // cache key is the flat virtual-store realpath, so a zod entry cannot be attributed to n8n vs
+    // another community node, and returning a wrong-tree copy would silently fail n8n's
+    // `instanceof ZodType` check. The require.main + n8n-owned-anchor paths above are the only
+    // correctness-preserving sources; if both fail we return undefined and the Proxy throws a
+    // clear error rather than guessing. (@n8n/n8n-nodes-langchain is always resident at execution,
+    // so the anchor path effectively always succeeds in a real tool invocation.)
     return _runtimeZod;
 }
 
