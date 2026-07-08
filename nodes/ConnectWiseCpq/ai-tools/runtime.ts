@@ -126,22 +126,18 @@ const ZOD_TREE_PATTERNS = [
     /[\\/]n8n-core[\\/]/,
 ] as const;
 
-// A community-node package segment (e.g. `.../n8n-nodes-foo/...`). n8n's own
-// `@n8n/n8n-nodes-langchain` is NOT a community node, so it is explicitly not matched.
-// NOTE: this is a best-effort heuristic for symlinked / nested-node_modules layouts. Under pnpm's
-// virtual store the realpath does not contain the dependent package name, so this cannot identify
-// a store-resident community copy — correctness there comes from the n8n-owned anchors above, not
-// from this predicate. Kept as defense-in-depth for the blind-scan last resort.
-function isCommunityNodePath(key: string): boolean {
-    return /[\\/]n8n-nodes-/.test(key) && !/[\\/]@n8n[\\/]n8n-nodes-/.test(key);
-}
-
 // Requires `id` from the first already-cached module whose key matches one of `patterns` (an
-// n8n-owned anchor package) and is not this package's own tree. Because the anchor packages are
-// never community-bundled, `createRequire()`-ing `id` from the matched module walks n8n's real
-// dependency graph to n8n's copy of `id` — independent of require.cache ordering and of pnpm
-// store-path naming. Also recovers the require.main result when require.main is undefined
-// (ESM/queue-mode workers). Returns undefined if nothing matches or every require throws.
+// n8n-owned anchor package). Correctness comes ENTIRELY from the anchor package's identity: the
+// anchor packages (@n8n/n8n-nodes-langchain, @langchain/classic, n8n-workflow, n8n-core) are
+// shipped by n8n and never owned/bundled by a community node — even under pnpm they resolve to a
+// single deduped store entry — so `createRequire()`-ing `id` from the matched module walks n8n's
+// real dependency graph to n8n's copy of `id`, independent of require.cache ordering AND of pnpm
+// store-path naming. (This is why there is no cache-key name-exclusion heuristic here: matching a
+// community-node segment in the key is unreliable under pnpm's virtual store, and unnecessary
+// given the anchor identity.) The OWN_PACKAGE_NAME skip is a cheap belt against the theoretical
+// case of this package's own path matching an anchor pattern. Also recovers the require.main
+// result when require.main is undefined (ESM/queue-mode workers). Returns undefined if nothing
+// matches or every require throws.
 function requireFromCachedTree(patterns: readonly RegExp[], id: string): unknown | undefined {
     try {
         const cache = require.cache;
@@ -150,7 +146,7 @@ function requireFromCachedTree(patterns: readonly RegExp[], id: string): unknown
         for (const pattern of patterns) {
             for (const key of keys) {
                 if (!pattern.test(key)) continue;
-                if (key.includes(OWN_PACKAGE_NAME) || isCommunityNodePath(key)) continue;
+                if (key.includes(OWN_PACKAGE_NAME)) continue;
                 const entry = cache[key];
                 if (!entry?.filename) continue;
                 try {

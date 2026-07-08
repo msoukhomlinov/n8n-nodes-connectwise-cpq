@@ -1,3 +1,11 @@
+## 0.4.10 — 2026-07-08
+
+### Changed
+
+- **Removed the `isCommunityNodePath()` cache-key heuristic entirely.** With the blind cache scans gone (0.4.8), its only remaining use was a redundant secondary guard inside `requireFromCachedTree()`. Correctness there rests solely on the anchor package's identity — `@n8n/n8n-nodes-langchain` / `@langchain/classic` / `n8n-workflow` / `n8n-core` are shipped by n8n and never owned or bundled by a community node (and pnpm dedups them to a single store entry), so `createRequire()`-ing the dep from a matched module always walks n8n's real dependency graph to n8n's copy. A cache-key name-exclusion heuristic is both unreliable under pnpm's virtual store (the realpath does not encode the dependent package) and unnecessary given the anchor identity, so it was dropped rather than left as misleading dead weight.
+
+---
+
 ## 0.4.9 — 2026-07-08
 
 ### Fixed
