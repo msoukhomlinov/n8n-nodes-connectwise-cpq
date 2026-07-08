@@ -1,3 +1,11 @@
+## 0.4.9 — 2026-07-08
+
+### Fixed
+
+- **`DynamicStructuredTool` resolution now tries `require.main` first, like zod does.** `getRuntimeRequire()` previously only attempted `require.resolve()` of the LangChain anchors from *this* package's own (out-of-tree) location, so on a host where n8n's process entry can reach `@langchain/core` but the anchor is not resolvable from our location, `DynamicStructuredTool` resolution failed even though zod succeeded (the resolvers were asymmetric — Codex review, PR #1). `getRuntimeRequire()` now anchors at `require.main` first (verifying `@langchain/core/tools` is reachable) before falling back to the filesystem anchors, mirroring the zod resolver.
+
+---
+
 ## 0.4.8 — 2026-07-08
 
 ### Fixed

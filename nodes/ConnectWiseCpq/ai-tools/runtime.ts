@@ -62,6 +62,26 @@ function getRuntimeRequire(): NodeRequire | undefined {
     if (_runtimeReq) return _runtimeReq;
 
     const tried: string[] = [];
+
+    // require.main FIRST — n8n's process entry point. Anchoring here reaches n8n's own dependency
+    // graph (where @langchain/core lives) and, crucially, works on pnpm-strict-isolated hosts
+    // where a require.resolve() from THIS package's out-of-tree location cannot see @langchain at
+    // all. Verify @langchain/core/tools is actually reachable from the anchor before accepting it.
+    // Guard for require.main undefined (ESM-launched n8n, queue-mode workers) — do NOT fall back
+    // to __filename (would anchor at this package's own copies).
+    const mainFile = require.main?.filename;
+    if (mainFile) {
+        try {
+            const req = createRequire(mainFile);
+            req.resolve('@langchain/core/tools');
+            _runtimeReq = req;
+            _anchorDiagnostic = 'resolved via require.main';
+            return _runtimeReq;
+        } catch (e) {
+            tried.push(`require.main (${mainFile}): ${(e as Error).message}`);
+        }
+    }
+
     for (const candidate of ANCHOR_CANDIDATES) {
         try {
             const resolved = require.resolve(candidate);
