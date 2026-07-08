@@ -1,3 +1,13 @@
+## 0.4.4 — 2026-07-08
+
+### Fixed
+
+- **AI Tools node crashed the entire package on pnpm-strict-isolated n8n installs (v2.29.x+).** `ai-tools/runtime.ts` resolved LangChain's `DynamicStructuredTool` and `zod` via filesystem anchor-probing at module-import time, throwing if the anchors did not resolve. Under pnpm's strict isolation the community node is installed outside n8n's own `node_modules` tree, so neither `@langchain/classic/agents` nor `langchain/agents` resolved — and because n8n's node-directory-loader imports every node file at registration time, the throw took down all nodes this package ships (`Unrecognized node type: connectWiseCpq.*`), not just the AI Tools node.
+- Anchor/zod resolution is now deferred past module load into lazy `Proxy` traps that only fire when a connected AI tool actually runs (`supplyData()`). Resolution tries `require.main` → the LangChain anchor → a `require.cache` scan (which finds the exact module instance n8n's own Agent/MCP Trigger machinery already loaded), and memoizes only on success so a failed early attempt never permanently disables retries.
+- `zod` moved from `devDependencies` to `dependencies` (it is statically imported at node-registration time in `schema-generator.ts`); a self-exclusion guard on every resolution path ensures this package's own bundled `zod` is never returned in place of n8n's, preserving the `instanceof ZodType` class identity n8n's tool-schema normalisation relies on. `@langchain/core` added as an optional `peerDependency` for install-time drift visibility.
+
+---
+
 ## 0.4.3 — 2026-04-02
 
 ### Fixed
