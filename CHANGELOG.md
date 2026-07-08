@@ -1,3 +1,62 @@
+## 0.4.10 — 2026-07-08
+
+### Changed
+
+- **Removed the `isCommunityNodePath()` cache-key heuristic entirely.** With the blind cache scans gone (0.4.8), its only remaining use was a redundant secondary guard inside `requireFromCachedTree()`. Correctness there rests solely on the anchor package's identity — `@n8n/n8n-nodes-langchain` / `@langchain/classic` / `n8n-workflow` / `n8n-core` are shipped by n8n and never owned or bundled by a community node (and pnpm dedups them to a single store entry), so `createRequire()`-ing the dep from a matched module always walks n8n's real dependency graph to n8n's copy. A cache-key name-exclusion heuristic is both unreliable under pnpm's virtual store (the realpath does not encode the dependent package) and unnecessary given the anchor identity, so it was dropped rather than left as misleading dead weight.
+
+---
+
+## 0.4.9 — 2026-07-08
+
+### Fixed
+
+- **`DynamicStructuredTool` resolution now tries `require.main` first, like zod does.** `getRuntimeRequire()` previously only attempted `require.resolve()` of the LangChain anchors from *this* package's own (out-of-tree) location, so on a host where n8n's process entry can reach `@langchain/core` but the anchor is not resolvable from our location, `DynamicStructuredTool` resolution failed even though zod succeeded (the resolvers were asymmetric — Codex review, PR #1). `getRuntimeRequire()` now anchors at `require.main` first (verifying `@langchain/core/tools` is reachable) before falling back to the filesystem anchors, mirroring the zod resolver.
+
+---
+
+## 0.4.8 — 2026-07-08
+
+### Fixed
+
+- **Removed the blind `require.cache` scan fallback for `zod` / `@langchain/core`.** Under pnpm the cache key is the flat virtual-store realpath, so a scan that takes the first non-self match cannot tell n8n's copy from another community node's and could return a wrong-`ZodType`-identity module — silently corrupting schema normalisation, which is worse than failing (Codex review, PR #1). Resolution now uses only correctness-preserving sources: `require.main`, then a `createRequire()` anchored off an n8n-owned package (`@n8n/n8n-nodes-langchain` / `n8n-workflow` / `n8n-core` / `@langchain/classic`, none ever community-bundled). If both fail, the resolver returns `undefined` and the lazy Proxy throws a clear diagnostic. In practice the anchor always resolves at execution because `@n8n/n8n-nodes-langchain` (which invokes the tool) is always loaded by then.
+- Regenerated `package-lock.json` so its recorded version matches `package.json` (was stale at `0.4.4`).
+
+---
+
+## 0.4.7 — 2026-07-08
+
+### Fixed
+
+- **Community-node exclusion was ineffective under pnpm's virtual store.** The `isCommunityNodePath()` guard greps the `require.cache` key for an `n8n-nodes-*` segment, but on pnpm installs Node records cache keys as the resolved virtual-store realpath (e.g. `.../.pnpm/zod@3.x/node_modules/zod/...`), which does not encode the dependent package — so a community node's own bundled `zod` / `@langchain/core` is indistinguishable by path from n8n's, and the exclusion silently no-ops there (Codex review, PR #1). Correctness no longer relies on that heuristic: the positive `require.cache` anchor now matches **only** packages that are n8n-owned and never community-bundled (`@n8n/n8n-nodes-langchain`, `@langchain/classic`, `n8n-workflow`, `n8n-core`) and resolves `zod` / `@langchain/core` by walking that package's real dependency graph — independent of store layout and cache order. `@n8n/n8n-nodes-langchain` (the package that runs the `instanceof` checks, and is always loaded before `supplyData()`) is tried first, so this anchor effectively always succeeds. The ambiguous bare `@langchain/core` anchor was dropped, and the zod resolver no longer falls back to the `@langchain/classic` anchor's nested (wrong-tree) zod. `isCommunityNodePath()` is retained only as best-effort defense on the blind-scan last resort.
+
+---
+
+## 0.4.6 — 2026-07-08
+
+### Fixed
+
+- **Positive-anchor `require.cache` lookup could still select another community node's copy.** The `requireFromCachedTree()` helper added in 0.4.5 excluded only *this* package's cache keys when picking a module to anchor `createRequire()` from. If a different community node had loaded its own bundled `@langchain/core` / `zod` / `n8n-workflow`, that node's cache key also matched the tree patterns, so the helper could `createRequire()` from the community node's nested copy and return (and memoize) the wrong `ZodType` identity — the exact class-identity mismatch the blind-scan fallback already guards against (Codex review, PR #1). The tree-anchor helper now applies the same `isCommunityNodePath()` exclusion, so the anchor module must belong to n8n's own tree.
+
+---
+
+## 0.4.5 — 2026-07-08
+
+### Fixed
+
+- **Runtime `zod`/`@langchain/core` resolution could pick another community node's bundled copy.** The `require.cache` fallback added in 0.4.4 excluded only *this* package's own `zod`; if a different community node had already loaded its own bundled `zod` (or `@langchain/core`), that copy could be returned before n8n's, so the tool schema was built with the wrong `ZodType` identity and could still fail n8n's schema normalisation (Codex review, PR #1). Resolution now **positively anchors** to n8n's own module tree — it requires `zod` / `@langchain/core/tools` from a cached `@n8n/n8n-nodes-langchain` / `n8n-workflow` / `@langchain/classic` module (tying the result to n8n's tree by identity rather than cache iteration order), and the blind-scan fallback now excludes **every** community-node (`n8n-nodes-*`) copy, not just this package's.
+
+---
+
+## 0.4.4 — 2026-07-08
+
+### Fixed
+
+- **AI Tools node crashed the entire package on pnpm-strict-isolated n8n installs (v2.29.x+).** `ai-tools/runtime.ts` resolved LangChain's `DynamicStructuredTool` and `zod` via filesystem anchor-probing at module-import time, throwing if the anchors did not resolve. Under pnpm's strict isolation the community node is installed outside n8n's own `node_modules` tree, so neither `@langchain/classic/agents` nor `langchain/agents` resolved — and because n8n's node-directory-loader imports every node file at registration time, the throw took down all nodes this package ships (`Unrecognized node type: connectWiseCpq.*`), not just the AI Tools node.
+- Anchor/zod resolution is now deferred past module load into lazy `Proxy` traps that only fire when a connected AI tool actually runs (`supplyData()`). Resolution tries `require.main` → the LangChain anchor → a `require.cache` scan (which finds the exact module instance n8n's own Agent/MCP Trigger machinery already loaded), and memoizes only on success so a failed early attempt never permanently disables retries.
+- `zod` moved from `devDependencies` to `dependencies` (it is statically imported at node-registration time in `schema-generator.ts`); a self-exclusion guard on every resolution path ensures this package's own bundled `zod` is never returned in place of n8n's, preserving the `instanceof ZodType` class identity n8n's tool-schema normalisation relies on. `@langchain/core` added as an optional `peerDependency` for install-time drift visibility.
+
+---
+
 ## 0.4.3 — 2026-04-02
 
 ### Fixed
