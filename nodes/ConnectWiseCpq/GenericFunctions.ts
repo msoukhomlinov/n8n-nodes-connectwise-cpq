@@ -12,6 +12,36 @@ import type {
 import { NodeApiError, NodeOperationError } from 'n8n-workflow';
 
 
+/**
+ * Milliseconds before a single HTTP request to the vendor is aborted. The node auto-pages
+ * sequentially inside one execution, so one unbounded request is multiplied by the page count.
+ */
+export const DEFAULT_REQUEST_TIMEOUT_MS = 30_000;
+
+/**
+ * Hard cap on the vendor calls one `cpqApiRequestAllItems` walk may make. Mirrors the sibling
+ * SDK's `maxPages` (DEFAULT_MAX_PAGES = 1000) so both implementations bound the same walk the
+ * same way. Reaching it refuses loudly instead of returning a silently truncated list.
+ */
+export const MAX_PAGES = 1000;
+
+/** Page size used when a caller supplies no page size, or one that is not a usable number. */
+const DEFAULT_PAGE_SIZE = 50;
+
+/**
+ * A page size that is missing, non-finite or below 1 becomes the default page size.
+ *
+ * The UI's `minValue: 1` is advisory — an n8n expression can produce 0 — and a page size below 1
+ * makes the short-page break in `cpqApiRequestAllItems` unreachable (`returnedCount < 0` is never
+ * true), which is what turned that loop into an unbounded vendor dial. Falling back to the default
+ * rather than to 1 also keeps an out-of-contract page size from degenerating into one vendor call
+ * per record. The value that reaches the vendor is always a positive integer.
+ */
+function normalizePageSize(pageSize: unknown): number {
+  const value = typeof pageSize === 'number' ? pageSize : Number(pageSize);
+  return Number.isFinite(value) && value >= 1 ? Math.floor(value) : DEFAULT_PAGE_SIZE;
+}
+
 export async function cpqApiRequest(
   this: IExecuteFunctions | IExecuteSingleFunctions | ILoadOptionsFunctions,
   method: IHttpRequestMethods,
@@ -46,6 +76,10 @@ export async function cpqApiRequest(
       Accept: 'application/json',
       'User-Agent': 'n8n-connectwise-cpq',
     },
+    // Client-side timeout: without it a stalled vendor read holds the node open with no upper
+    // bound (the retry backoff below adds at most 500+1000 ms). A caller-supplied
+    // `options.timeout` still wins, because `options` is merged over this object below.
+    timeout: DEFAULT_REQUEST_TIMEOUT_MS,
   };
 
   if (Object.keys(options).length) {
@@ -136,10 +170,14 @@ export async function cpqApiRequestAllItems(
   qs: IDataObject = {},
   options: IDataObject = {},
   limit?: number,
-  pageSize = 50,
+  pageSize = DEFAULT_PAGE_SIZE,
 ): Promise<unknown[]> {
   const returnData: unknown[] = [];
+  // Clamped by construction, not by special-casing a bad value: every page size that reaches the
+  // vendor (and every comparison below) uses this, so no caller input can defeat termination.
+  const effectivePageSize = normalizePageSize(pageSize);
   let page = 1;
+  let pagesFetched = 0;
 
   while (true) {
     const responseData = await cpqApiRequest.call(
@@ -147,9 +185,10 @@ export async function cpqApiRequestAllItems(
       method,
       endpoint,
       body,
-      { ...qs, page, pageSize },
+      { ...qs, page, pageSize: effectivePageSize },
       options,
     );
+    pagesFetched += 1;
 
     const items = (propertyName
       ? (responseData as IDataObject)[propertyName]
@@ -172,9 +211,25 @@ export async function cpqApiRequestAllItems(
       : Array.isArray(responseData)
       ? responseData.length
       : 0;
-    if (returnedCount < pageSize) {
+    if (returnedCount < effectivePageSize) {
       break;
     }
+
+    // Termination that does not depend on the caller's inputs at all: `limit` may be absent
+    // (Return All) or 0, and a page size that defeats the short-page break is clamped above, so
+    // this page bound is what makes the walk total. Refusing loudly beats returning a prefix of
+    // the list as if it were all of it; no records are returned with this error.
+    if (pagesFetched >= MAX_PAGES) {
+      throw new NodeOperationError(
+        this.getNode(),
+        `Auto-paging stopped after ${pagesFetched} vendor calls at pageSize ${effectivePageSize}: the ` +
+          `${MAX_PAGES}-page bound was reached and the list is not exhausted, so no records were returned. ` +
+          `Bound the call with a 'limit' (e.g. 50) or narrow it with filters/conditions` +
+          (effectivePageSize === 1 ? `; at pageSize 1 each remaining record costs one more vendor call` : '') +
+          `.`,
+      );
+    }
+
     page += 1;
   }
 

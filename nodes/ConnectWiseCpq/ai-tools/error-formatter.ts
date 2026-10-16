@@ -3,6 +3,8 @@
 // wrapSuccess / wrapError are the sole factories. The legacy formatXxx()
 // helpers are thin wrappers that delegate to wrapError() internally.
 
+import { markUntrusted } from './untrusted-marker';
+
 // ── Interfaces ────────────────────────────────────────────────────────────
 
 interface ToolEnvelope {
@@ -39,6 +41,7 @@ export const ERROR_TYPES = {
     WRITE_OPERATION_BLOCKED: 'WRITE_OPERATION_BLOCKED',
     PERMISSION_DENIED: 'PERMISSION_DENIED',
     VALIDATION_ERROR: 'VALIDATION_ERROR',
+    PAYLOAD_TOO_LARGE: 'PAYLOAD_TOO_LARGE',
 } as const;
 
 // ── Envelope factories ────────────────────────────────────────────────────
@@ -72,26 +75,32 @@ export function formatApiError(
     resource: string,
     operation: string,
 ): ErrorEnvelope {
+    // This message is the vendor's (an HTTP error body or a transport message) or one of our own
+    // client-side refusals. Classification below reads it raw; the copy handed to the model is
+    // marked, because the fail-safe direction for text reaching a model is 'data, not
+    // instructions'. Our own refusal text is marked along with it — a deliberate, harmless
+    // imprecision rather than a second, message-shape-dependent branch.
     const lower = message.toLowerCase();
+    const markedMessage = markUntrusted(message);
 
     if (lower.includes('forbidden') || lower.includes('unauthor') || lower.includes('permission')) {
-        return wrapError(resource, operation, ERROR_TYPES.PERMISSION_DENIED, message,
+        return wrapError(resource, operation, ERROR_TYPES.PERMISSION_DENIED, markedMessage,
             'Verify API credentials and permissions, then retry.');
     }
     if (lower.includes('not found') || lower.includes('does not exist') || lower.includes('404')) {
-        return wrapError(resource, operation, ERROR_TYPES.ENTITY_NOT_FOUND, message,
+        return wrapError(resource, operation, ERROR_TYPES.ENTITY_NOT_FOUND, markedMessage,
             `Call connectwisecpq_${resource} with operation 'getAll' and the 'conditions' parameter to find the record, extract its id, then retry.`);
     }
     if (lower.includes('required') || lower.includes('missing') || lower.includes('blank')) {
-        return wrapError(resource, operation, ERROR_TYPES.MISSING_REQUIRED_FIELD, message,
+        return wrapError(resource, operation, ERROR_TYPES.MISSING_REQUIRED_FIELD, markedMessage,
             'Check required fields for this resource and retry with all required parameters.');
     }
     if (lower.includes('validation') || lower.includes('invalid') || lower.includes('unprocessable')) {
-        return wrapError(resource, operation, ERROR_TYPES.VALIDATION_ERROR, message,
+        return wrapError(resource, operation, ERROR_TYPES.VALIDATION_ERROR, markedMessage,
             'Check the field values and types, then retry with corrected parameters.');
     }
 
-    return wrapError(resource, operation, ERROR_TYPES.API_ERROR, message,
+    return wrapError(resource, operation, ERROR_TYPES.API_ERROR, markedMessage,
         'Verify parameter names and values, then retry.');
 }
 

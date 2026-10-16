@@ -220,6 +220,23 @@ export function isLegacyQuoteId(id: string): boolean {
 }
 
 /**
+ * Why an update (PATCH) cannot run against a legacy quote id. Shared by the regular node
+ * (thrown as a NodeOperationError) and the AI-tools executor (returned as a typed envelope),
+ * so both surfaces say the same thing and the wording has one home.
+ */
+export function legacyQuoteIdUpdateMessage(id: string): string {
+  return `Quote ID "${id}" uses the legacy UUID format. The ConnectWise CPQ API does not support PATCH operations on legacy quotes and returns a 500 error. Only quotes with the newer alphanumeric ID format (e.g. q639088936162812241alWXeGX) can be updated via the API.`;
+}
+
+/**
+ * Why a close (Lost / Won / No Decision) cannot run against a legacy quote id — the same
+ * shared wording rule as {@link legacyQuoteIdUpdateMessage}.
+ */
+export function legacyQuoteIdCloseMessage(id: string): string {
+  return `Quote ID "${id}" uses the legacy UUID format. The ConnectWise CPQ API does not support PATCH operations on legacy quotes — close operations (Lost, Won, No Decision) require PATCH and will return a 500 error. Use the Delete operation instead (which does work on legacy quotes), or close the quote manually in the CPQ GUI.`;
+}
+
+/**
  * AND-appends `extra` to `base`, wrapping base in parens if it contains OR logic.
  */
 export function appendConditions(base: string, extra: string): string {
@@ -728,7 +745,7 @@ export async function executeQuotes(
     if (isLegacyQuoteId(quoteId)) {
       throw new NodeOperationError(
         this.getNode(),
-        `Quote ID "${quoteId}" uses the legacy UUID format. The ConnectWise CPQ API does not support PATCH operations on legacy quotes — close operations (Lost, Won, No Decision) require PATCH and will return a 500 error. Use the Delete operation instead (which does work on legacy quotes), or close the quote manually in the CPQ GUI.`,
+        legacyQuoteIdCloseMessage(quoteId),
         { itemIndex: i },
       );
     }
@@ -763,7 +780,7 @@ export async function executeQuotes(
     if (isLegacyQuoteId(quoteId)) {
       throw new NodeOperationError(
         this.getNode(),
-        `Quote ID "${quoteId}" uses the legacy UUID format. The ConnectWise CPQ API does not support PATCH operations on legacy quotes and returns a 500 error. Only quotes with the newer alphanumeric ID format (e.g. q639088936162812241alWXeGX) can be updated via the API.`,
+        legacyQuoteIdUpdateMessage(quoteId),
         { itemIndex: i },
       );
     }
