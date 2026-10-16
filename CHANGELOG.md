@@ -1,5 +1,7 @@
 ## Unreleased
 
+## 0.4.11 — 2026-10-16
+
 ### Fixed
 
 - **The paging loop could not terminate, and no request set a client-side timeout.** A page size below 1
