@@ -1,0 +1,9 @@
+# Repo-audit config (intellectit-repo-audit). Without it only package.json is checked and the
+# publish state is not tracked at all. The node's own `version: 1` property is the n8n node
+# schema version, not the package version, so it is deliberately not a surface here.
+version_surfaces:
+  - file: package.json
+    pattern: '"version":\s*"([^"]+)"'
+publish:
+  registry: npm
+  package: n8n-nodes-connectwise-cpq
