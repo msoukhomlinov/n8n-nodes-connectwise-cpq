@@ -1,3 +1,30 @@
+## Unreleased
+
+### Fixed
+
+- **The paging loop could not terminate, and no request set a client-side timeout.** A page size below 1
+  (reachable from an ordinary expression — the UI's `minValue: 1` is only a hint) made both loop breaks
+  unreachable: `if (limit && ...)` is falsy at `limit = 0`, and `returnedCount < pageSize` becomes `0 < 0`.
+  The walk now clamps the page size once, at a single choke point, and carries an explicit page bound, so no
+  combination of caller inputs can spin; the bound fails loudly, naming the vendor-call count, rather than
+  returning an empty result. Requests now carry a 30s timeout (a caller-supplied value still wins). This
+  reproduces as a heap exhaustion on the previous code.
+- **The AI-tool surface had no payload guard and passed vendor text to the model unmarked.** A single tool call
+  could return up to 1000 full records (~6.4 MB) with no size limit, and nothing distinguished vendor data from
+  instructions. Results over 256 KiB are now refused with a typed `PAYLOAD_TOO_LARGE` (never silently cut), the
+  `limit` argument is clamped at the tool boundary, and vendor text is wrapped in the same
+  `⟦UNTRUSTED⟧ … ⟦/UNTRUSTED⟧` convention the sibling SDK uses, with the tool description stating what the
+  markers mean. The regular node's item output is unchanged.
+- **The AI-tool path did not gate legacy quote ids.** The regular node refuses them before the wire, but an
+  agent reaching `update`/`closeAs*` through the AI tools got the vendor's raw 500 mapped to a generic
+  `API_ERROR`. It now returns the same typed, actionable message the regular node uses, with no vendor call.
+
+### Added
+
+- **A test suite** (`node --test`, no new dependency) covering the paging bounds, the AI-tool guards and the
+  legacy-id refusal. A control run on the pre-fix commit reproduces the unbounded loop as a heap exhaustion,
+  so the tests bind the defect rather than describing it.
+
 ## 0.4.10 — 2026-07-08
 
 ### Changed
